@@ -33,7 +33,7 @@ class ServiceControllerTest {
         when(serviceService.getAllServices()).thenReturn(List.of(service));
         when(serviceMapper.toDTO(service)).thenReturn(dto);
 
-        mockMvc.perform(get("/api/servicios"))
+        mockMvc.perform(get("/api/services"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Web Design"));
     }
