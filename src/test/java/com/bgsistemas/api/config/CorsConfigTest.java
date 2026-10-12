@@ -1,4 +1,6 @@
 package com.bgsistemas.api.config;
+import com.bgsistemas.api.config.SecurityConfig;
+import org.springframework.context.annotation.Import;
 
 import com.bgsistemas.api.service.ServiceController;
 import com.bgsistemas.api.service.ServiceMapper;
@@ -13,6 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Import(SecurityConfig.class)
 @WebMvcTest(ServiceController.class)
 class CorsConfigTest {
 

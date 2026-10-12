@@ -1,4 +1,6 @@
 package com.bgsistemas.api.contact;
+import com.bgsistemas.api.config.SecurityConfig;
+import org.springframework.context.annotation.Import;
 
 import com.bgsistemas.api.contact.dtos.ContactResponseDTO;
 import com.bgsistemas.api.contact.mappers.ContactMapper;
@@ -19,6 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Import(SecurityConfig.class)
 @WebMvcTest(ContactController.class)
 class ContactControllerTest {
 

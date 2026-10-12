@@ -1,4 +1,6 @@
 package com.bgsistemas.api.service;
+import com.bgsistemas.api.config.SecurityConfig;
+import org.springframework.context.annotation.Import;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Import(SecurityConfig.class)
 @WebMvcTest(ServiceController.class)
 class ServiceControllerTest {
 

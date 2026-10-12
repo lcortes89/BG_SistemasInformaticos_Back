@@ -1,4 +1,6 @@
 package com.bgsistemas.api.brand;
+import com.bgsistemas.api.config.SecurityConfig;
+import org.springframework.context.annotation.Import;
 
 import com.bgsistemas.api.service.Service;
 import com.bgsistemas.api.service.ServiceDTO;
@@ -17,6 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Import(SecurityConfig.class)
 @WebMvcTest(BrandController.class)
 class BrandControllerTest {
 
