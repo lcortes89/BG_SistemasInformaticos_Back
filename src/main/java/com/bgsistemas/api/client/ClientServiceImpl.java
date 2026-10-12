@@ -1,8 +1,8 @@
 package com.bgsistemas.api.client;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 public class ClientServiceImpl implements ClientService {
@@ -14,7 +14,7 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
-    public List<Client> getPublishedClients() {
-        return clientRepository.findByPublishedTrue();
+    public Page<Client> getPublishedClients(Pageable pageable) {
+        return clientRepository.findByPublishedTrue(pageable);
     }
 }
