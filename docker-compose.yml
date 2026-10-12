@@ -1,0 +1,17 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: bgsistemas-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: bgsistemas
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
