@@ -17,4 +17,10 @@ public class ServiceServiceImpl implements ServiceService {
     public List<Service> getAllServices() {
         return serviceRepository.findAll();
     }
+
+    // NEW
+    @Override
+    public List<Service> getServicesByBrandId(Long brandId) {
+        return serviceRepository.findByBrandId(brandId);
+    }
 }
