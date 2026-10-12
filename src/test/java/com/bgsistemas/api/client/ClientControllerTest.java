@@ -1,4 +1,6 @@
 package com.bgsistemas.api.client;
+import com.bgsistemas.api.client.dtos.ClientDTO;
+import com.bgsistemas.api.client.mappers.ClientMapper;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,7 +1,7 @@
 package com.bgsistemas.api.config;
 
 import com.bgsistemas.api.service.ServiceController;
-import com.bgsistemas.api.service.ServiceMapper;
+import com.bgsistemas.api.service.mappers.ServiceMapper;
 import com.bgsistemas.api.service.ServiceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
