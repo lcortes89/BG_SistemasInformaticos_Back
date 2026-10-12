@@ -5,6 +5,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 
@@ -21,13 +24,15 @@ class ClientServiceImplTest {
     private ClientServiceImpl clientService;
 
     @Test
-    void shouldReturnOnlyPublishedClients() {
+    void shouldReturnPublishedClientsPage() {
         Client client = new Client(1L, "Bar La Plaza", "Bar", "Great service", "laplaza.png", 5, true);
-        when(clientRepository.findByPublishedTrue()).thenReturn(List.of(client));
+        PageRequest pageRequest = PageRequest.of(0, 6);
+        when(clientRepository.findByPublishedTrue(pageRequest))
+                .thenReturn(new PageImpl<>(List.of(client), pageRequest, 1));
 
-        List<Client> result = clientService.getPublishedClients();
+        Page<Client> result = clientService.getPublishedClients(pageRequest);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).isPublished()).isTrue();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).isPublished()).isTrue();
     }
 }

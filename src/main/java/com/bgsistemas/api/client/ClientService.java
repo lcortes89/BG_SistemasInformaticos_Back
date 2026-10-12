@@ -1,8 +1,9 @@
 package com.bgsistemas.api.client;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface ClientService {
 
-    List<Client> getPublishedClients();
+    Page<Client> getPublishedClients(Pageable pageable);
 }
