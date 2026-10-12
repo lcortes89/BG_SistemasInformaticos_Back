@@ -1,9 +1,13 @@
 package com.bgsistemas.api.service;
 
+import com.bgsistemas.api.brand.Brand;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 public class Service {
@@ -14,6 +18,11 @@ public class Service {
     private String name;
     private String description;
     private String imageUrl;
+
+    // NEW: each service belongs to one brand (creates the brand_id foreign key column)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_id")
+    private Brand brand;
 
     public Service() {
     }
@@ -55,5 +64,15 @@ public class Service {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    // NEW
+    public Brand getBrand() {
+        return brand;
+    }
+
+    // NEW
+    public void setBrand(Brand brand) {
+        this.brand = brand;
     }
 }

@@ -1,5 +1,9 @@
 package com.bgsistemas.api.brand;
 
+import com.bgsistemas.api.service.Service;
+import com.bgsistemas.api.service.ServiceDTO;
+import com.bgsistemas.api.service.ServiceMapper;
+import com.bgsistemas.api.service.ServiceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -25,6 +29,13 @@ class BrandControllerTest {
     @MockitoBean
     private BrandMapper brandMapper;
 
+    // NEW: BrandController will also depend on these two
+    @MockitoBean
+    private ServiceService serviceService;
+
+    @MockitoBean
+    private ServiceMapper serviceMapper;
+
     @Test
     void shouldReturnAllBrands() throws Exception {
         Brand brand = new Brand(1L, "BDP", "Software para hostelería", "software", "bdp-logo.png", true);
@@ -36,5 +47,20 @@ class BrandControllerTest {
         mockMvc.perform(get("/api/brands"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("BDP"));
+    }
+
+    // NEW
+    @Test
+    void shouldReturnServicesOfABrand() throws Exception {
+        Service bdpOne = new Service(2L, "BDP One", "Multiplatform version", "bdp-one.jpg");
+        ServiceDTO dto = new ServiceDTO(2L, "BDP One", "Multiplatform version", "bdp-one.jpg", 1L, "BDP");
+
+        when(serviceService.getServicesByBrandId(1L)).thenReturn(List.of(bdpOne));
+        when(serviceMapper.toDTO(bdpOne)).thenReturn(dto);
+
+        mockMvc.perform(get("/api/brands/1/services"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("BDP One"))
+                .andExpect(jsonPath("$[0].brandName").value("BDP"));
     }
 }
