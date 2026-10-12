@@ -55,6 +55,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request, null);
     }
 
+    // 409: any of our "conflict" exceptions (e.g. deleting a brand that still has services)
+    @ExceptionHandler(ResourceConflictException.class)
+    public ResponseEntity<ApiErrorDTO> handleConflict(ResourceConflictException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request, null);
+    }
+
     // 409: email already registered
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ApiErrorDTO> handleEmailExists(EmailAlreadyExistsException ex, HttpServletRequest request) {

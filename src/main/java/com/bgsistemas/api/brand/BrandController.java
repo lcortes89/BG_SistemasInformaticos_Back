@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/brands")
@@ -30,11 +29,12 @@ public class BrandController {
         this.serviceMapper = serviceMapper;
     }
 
+    // GET /api/brands -> only active brands (the admin can hide a brand without deleting it)
     @GetMapping
-    public List<BrandDTO> getAllBrands() {
-        return brandService.getAllBrands().stream()
+    public List<BrandDTO> getActiveBrands() {
+        return brandService.getActiveBrands().stream()
                 .map(brandMapper::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // GET /api/brands/{id}/services -> 404 if the brand does not exist
@@ -43,6 +43,6 @@ public class BrandController {
         brandService.getBrandById(id);
         return serviceService.getServicesByBrandId(id).stream()
                 .map(serviceMapper::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

@@ -8,6 +8,9 @@ public interface ServiceRepository extends JpaRepository<Service, Long> {
 
     List<Service> findByBrandId(Long brandId);
 
-    // NEW: SELECT * FROM service WHERE featured = true
+    // SELECT * FROM service WHERE featured = true
     List<Service> findByFeaturedTrue();
+
+    // SELECT COUNT(*) FROM service WHERE brand_id = ?
+    long countByBrandId(Long brandId);
 }
