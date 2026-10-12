@@ -19,7 +19,9 @@ public class Service {
     private String description;
     private String imageUrl;
 
-    // NEW: each service belongs to one brand (creates the brand_id foreign key column)
+    // NEW: marks the service to be shown on the home page (false by default)
+    private boolean featured;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "brand_id")
     private Brand brand;
@@ -67,11 +69,19 @@ public class Service {
     }
 
     // NEW
+    public boolean isFeatured() {
+        return featured;
+    }
+
+    // NEW
+    public void setFeatured(boolean featured) {
+        this.featured = featured;
+    }
+
     public Brand getBrand() {
         return brand;
     }
 
-    // NEW
     public void setBrand(Brand brand) {
         this.brand = brand;
     }

@@ -2,10 +2,11 @@ package com.bgsistemas.api.service;
 
 import com.bgsistemas.api.brand.Brand;
 import com.bgsistemas.api.brand.BrandRepository;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,6 +15,9 @@ class ServiceRepositoryTest {
 
     @Autowired
     private ServiceRepository serviceRepository;
+
+    @Autowired
+    private BrandRepository brandRepository;
 
     @Test
     void shouldSaveAndFindService() {
@@ -24,9 +28,6 @@ class ServiceRepositoryTest {
         assertThat(saved.getId()).isNotNull();
         assertThat(serviceRepository.findById(saved.getId())).isPresent();
     }
-
-    @Autowired
-    private BrandRepository brandRepository;
 
     @Test
     void shouldFindServicesByBrandId() {
@@ -42,6 +43,20 @@ class ServiceRepositoryTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("BDP .Net");
     }
-}
 
-    
+    // NEW: only services marked as featured are returned
+    @Test
+    void shouldFindOnlyFeaturedServices() {
+        Service featured = new Service(null, "BDP One", "Multiplatform version", "bdp-one.jpg");
+        featured.setFeatured(true);
+        Service normal = new Service(null, "Support", "Technical support", "support.jpg");
+
+        serviceRepository.save(featured);
+        serviceRepository.save(normal);
+
+        List<Service> result = serviceRepository.findByFeaturedTrue();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getName()).isEqualTo("BDP One");
+    }
+}
