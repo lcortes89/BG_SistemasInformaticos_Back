@@ -1,11 +1,16 @@
 package com.bgsistemas.api.contact;
 
 import com.bgsistemas.api.contact.dtos.ContactResponseDTO;
+import com.bgsistemas.api.contact.dtos.ContactUpdateRequestDTO;
 import com.bgsistemas.api.contact.mappers.ContactMapper;
 import com.bgsistemas.api.globals.PageResponseDTO;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,5 +38,14 @@ public class AdminContactController {
                 Sort.by(Sort.Direction.DESC, "createdAt"));
         return PageResponseDTO.from(
                 contactService.getContacts(status, pageRequest).map(contactMapper::toResponse));
+    }
+
+    // PATCH /api/admin/contacts/{id}  { "status": "CONTACTED", "note": "..." }
+    // Archiving = { "status": "ARCHIVED" }
+    @PatchMapping("/{id}")
+    public ContactResponseDTO updateContact(@PathVariable Long id,
+                                            @Valid @RequestBody ContactUpdateRequestDTO request) {
+        Contact updated = contactService.updateContact(id, request.status(), request.note());
+        return contactMapper.toResponse(updated);
     }
 }
