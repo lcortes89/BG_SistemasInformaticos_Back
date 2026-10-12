@@ -2,6 +2,7 @@ package com.bgsistemas.api.service;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -18,10 +19,15 @@ public class ServiceController {
         this.serviceMapper = serviceMapper;
     }
 
+    // GET /api/services            → all services
+    // GET /api/services?featured=true → only featured services
     @GetMapping
-    public List<ServiceDTO> getAllServices() {
-        return serviceService.getAllServices()
-                .stream()
+    public List<ServiceDTO> getServices(@RequestParam(required = false) Boolean featured) {
+        List<Service> services = Boolean.TRUE.equals(featured)
+                ? serviceService.getFeaturedServices()
+                : serviceService.getAllServices();
+
+        return services.stream()
                 .map(serviceMapper::toDTO)
                 .toList();
     }
