@@ -18,4 +18,7 @@ public interface ServiceRepository extends JpaRepository<Service, Long> {
 
     // SELECT COUNT(*) FROM service WHERE brand_id = ?
     long countByBrandId(Long brandId);
+
+    // SELECT COUNT(*) FROM service WHERE featured = true
+    long countByFeaturedTrue();
 }

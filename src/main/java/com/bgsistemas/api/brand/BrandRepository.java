@@ -8,4 +8,7 @@ public interface BrandRepository extends JpaRepository<Brand, Long> {
 
     // SELECT * FROM brand WHERE active = true (public website)
     List<Brand> findByActiveTrue();
+
+    // SELECT COUNT(*) FROM brand WHERE active = true
+    long countByActiveTrue();
 }

@@ -13,4 +13,7 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
 
     // Same query, but one page at a time (LIMIT / OFFSET)
     Page<Client> findByPublishedTrue(Pageable pageable);
+
+    // SELECT COUNT(*) FROM client WHERE published = true
+    long countByPublishedTrue();
 }

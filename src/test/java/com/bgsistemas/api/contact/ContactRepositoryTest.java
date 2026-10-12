@@ -6,6 +6,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
@@ -45,5 +47,24 @@ class ContactRepositoryTest {
         assertThat(firstPage.getContent()).hasSize(2);
         assertThat(firstPage.getTotalElements()).isEqualTo(3);
         assertThat(firstPage.getContent()).allMatch(contact -> contact.getStatus() == ContactStatus.NEW);
+    }
+
+    @Test
+    void shouldCountContactsByStatus() {
+        contactRepository.save(newContact("New 1", ContactStatus.NEW));
+        contactRepository.save(newContact("New 2", ContactStatus.NEW));
+        contactRepository.save(newContact("Archived", ContactStatus.ARCHIVED));
+
+        assertThat(contactRepository.countByStatus(ContactStatus.NEW)).isEqualTo(2);
+        assertThat(contactRepository.countByStatus(ContactStatus.CONTACTED)).isZero();
+    }
+
+    @Test
+    void shouldReturnAtMostFiveLatestContacts() {
+        for (String name : List.of("A", "B", "C", "D", "E", "F")) {
+            contactRepository.save(newContact(name, ContactStatus.NEW));
+        }
+
+        assertThat(contactRepository.findTop5ByOrderByCreatedAtDesc()).hasSize(5);
     }
 }
