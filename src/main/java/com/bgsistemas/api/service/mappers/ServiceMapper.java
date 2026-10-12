@@ -1,4 +1,6 @@
-package com.bgsistemas.api.service;
+package com.bgsistemas.api.service.mappers;
+import com.bgsistemas.api.service.Service;
+import com.bgsistemas.api.service.dtos.ServiceDTO;
 
 import com.bgsistemas.api.brand.Brand;
 import org.springframework.stereotype.Component;

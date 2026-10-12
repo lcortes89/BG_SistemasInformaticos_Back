@@ -1,4 +1,4 @@
-package com.bgsistemas.api.brand;
+package com.bgsistemas.api.brand.dtos;
 
 public class BrandDTO {
 

@@ -1,5 +1,6 @@
 package com.bgsistemas.api.brand;
 
+import com.bgsistemas.api.brand.exceptions.BrandNotFoundException;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,5 +17,11 @@ public class BrandServiceImpl implements BrandService {
     @Override
     public List<Brand> getAllBrands() {
         return brandRepository.findAll();
+    }
+
+    @Override
+    public Brand getBrandById(Long id) {
+        return brandRepository.findById(id)
+                .orElseThrow(() -> new BrandNotFoundException(id));
     }
 }

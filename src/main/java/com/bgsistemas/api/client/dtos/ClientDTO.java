@@ -1,4 +1,4 @@
-package com.bgsistemas.api.client;
+package com.bgsistemas.api.client.dtos;
 
 public class ClientDTO {
 

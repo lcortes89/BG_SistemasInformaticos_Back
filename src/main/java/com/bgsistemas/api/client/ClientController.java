@@ -1,4 +1,6 @@
 package com.bgsistemas.api.client;
+import com.bgsistemas.api.client.dtos.ClientDTO;
+import com.bgsistemas.api.client.mappers.ClientMapper;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
