@@ -1,4 +1,6 @@
-package com.bgsistemas.api.client;
+package com.bgsistemas.api.client.mappers;
+import com.bgsistemas.api.client.Client;
+import com.bgsistemas.api.client.dtos.ClientDTO;
 
 import org.junit.jupiter.api.Test;
 

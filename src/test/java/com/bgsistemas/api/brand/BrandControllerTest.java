@@ -1,10 +1,12 @@
 package com.bgsistemas.api.brand;
+import com.bgsistemas.api.brand.dtos.BrandDTO;
+import com.bgsistemas.api.brand.mappers.BrandMapper;
 import com.bgsistemas.api.config.SecurityConfig;
 import org.springframework.context.annotation.Import;
 
 import com.bgsistemas.api.service.Service;
-import com.bgsistemas.api.service.ServiceDTO;
-import com.bgsistemas.api.service.ServiceMapper;
+import com.bgsistemas.api.service.dtos.ServiceDTO;
+import com.bgsistemas.api.service.mappers.ServiceMapper;
 import com.bgsistemas.api.service.ServiceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

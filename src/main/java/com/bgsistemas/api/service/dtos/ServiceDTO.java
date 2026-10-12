@@ -1,4 +1,4 @@
-package com.bgsistemas.api.service;
+package com.bgsistemas.api.service.dtos;
 
 public class ServiceDTO {
 

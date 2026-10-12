@@ -1,4 +1,6 @@
 package com.bgsistemas.api.client;
+import com.bgsistemas.api.client.dtos.ClientDTO;
+import com.bgsistemas.api.client.mappers.ClientMapper;
 import com.bgsistemas.api.config.SecurityConfig;
 import org.springframework.context.annotation.Import;
 

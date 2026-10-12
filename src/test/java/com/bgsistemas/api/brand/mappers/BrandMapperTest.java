@@ -1,4 +1,6 @@
-package com.bgsistemas.api.brand;
+package com.bgsistemas.api.brand.mappers;
+import com.bgsistemas.api.brand.Brand;
+import com.bgsistemas.api.brand.dtos.BrandDTO;
 
 import org.junit.jupiter.api.Test;
 
