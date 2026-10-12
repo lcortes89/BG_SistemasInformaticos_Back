@@ -46,6 +46,8 @@ public class SecurityConfig {
                         // Uploaded images (logos, products) are shown on the public website
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/contacts").permitAll()
+                        // The rate wizard of the website
+                        .requestMatchers(HttpMethod.POST, "/api/rates/calculate").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
