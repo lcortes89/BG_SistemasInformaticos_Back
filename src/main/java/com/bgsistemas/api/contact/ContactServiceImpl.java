@@ -1,5 +1,7 @@
 package com.bgsistemas.api.contact;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,5 +20,13 @@ public class ContactServiceImpl implements ContactService {
             throw new IllegalArgumentException("GDPR consent is required to store a contact");
         }
         return contactRepository.save(contact);
+    }
+
+    @Override
+    public Page<Contact> getContacts(ContactStatus status, Pageable pageable) {
+        if (status == null) {
+            return contactRepository.findAll(pageable);
+        }
+        return contactRepository.findByStatus(status, pageable);
     }
 }
