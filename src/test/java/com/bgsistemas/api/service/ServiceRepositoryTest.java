@@ -44,7 +44,6 @@ class ServiceRepositoryTest {
         assertThat(result.get(0).getName()).isEqualTo("BDP .Net");
     }
 
-    // NEW: only services marked as featured are returned
     @Test
     void shouldFindOnlyFeaturedServices() {
         Service featured = new Service(null, "BDP One", "Multiplatform version", "bdp-one.jpg");
@@ -58,5 +57,19 @@ class ServiceRepositoryTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("BDP One");
+    }
+
+    @Test
+    void shouldCountServicesOfABrand() {
+        Brand pudu = brandRepository.save(new Brand(null, "PUDU", "Robots", "Hardware", null, true));
+        Brand empty = brandRepository.save(new Brand(null, "Empty", "No services", "Hardware", null, true));
+        for (String name : List.of("BellaBot", "KettyBot")) {
+            Service robot = new Service(null, name, "Service robot", null);
+            robot.setBrand(pudu);
+            serviceRepository.save(robot);
+        }
+
+        assertThat(serviceRepository.countByBrandId(pudu.getId())).isEqualTo(2);
+        assertThat(serviceRepository.countByBrandId(empty.getId())).isZero();
     }
 }
