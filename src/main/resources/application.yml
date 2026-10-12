@@ -5,6 +5,11 @@ spring:
     name: api
   profiles:
     active: dev
+  servlet:
+    multipart:
+      # Spring's own limit (above ours, so our 2 MB message is the one the user sees)
+      max-file-size: 5MB
+      max-request-size: 5MB
 app:
   jwt:
     secret: ${JWT_SECRET}
@@ -12,3 +17,5 @@ app:
   admin:
     email: ${ADMIN_EMAIL}
     password: ${ADMIN_PASSWORD}
+  uploads:
+    dir: uploads
