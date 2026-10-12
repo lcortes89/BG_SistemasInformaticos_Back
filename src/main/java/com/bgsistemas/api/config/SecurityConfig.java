@@ -1,5 +1,7 @@
 package com.bgsistemas.api.config;
 
+import com.bgsistemas.api.security.JsonAccessDeniedHandler;
+import com.bgsistemas.api.security.JsonAuthenticationEntryPoint;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -31,49 +33,46 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        JsonAuthenticationEntryPoint unauthorized = new JsonAuthenticationEntryPoint();
+        JsonAccessDeniedHandler forbidden = new JsonAccessDeniedHandler();
+
         http
-                // Uses the CORS rules already defined in CorsConfig
                 .cors(Customizer.withDefaults())
-                // REST API with tokens: no cookies/sessions, so CSRF protection is not needed
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Browser preflight requests (CORS)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Public website: read-only data
                         .requestMatchers(HttpMethod.GET, "/api/services/**", "/api/brands/**", "/api/clients/**").permitAll()
-                        // Public contact form
                         .requestMatchers(HttpMethod.POST, "/api/contacts").permitAll()
-                        // Only an admin can register another admin
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").hasRole("ADMIN")
-                        // Admin dashboard API
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        // Everything else (e.g. /api/auth/login) requires authentication
                         .anyRequest().authenticated())
-                // Login with email + password (HTTP Basic) -> returns a JWT
-                .httpBasic(Customizer.withDefaults())
-                // Every other protected request -> "Authorization: Bearer <JWT>"
-                .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt
-                        .decoder(jwtDecoder())
-                        .jwtAuthenticationConverter(jwtAuthenticationConverter())));
+                // 401 and 403 answered with our JSON format (also avoids the browser's login pop-up)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(unauthorized)
+                        .accessDeniedHandler(forbidden))
+                .httpBasic(basic -> basic.authenticationEntryPoint(unauthorized))
+                .oauth2ResourceServer(oauth -> oauth
+                        .authenticationEntryPoint(unauthorized)
+                        .accessDeniedHandler(forbidden)
+                        .jwt(jwt -> jwt
+                                .decoder(jwtDecoder())
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
         return http.build();
     }
 
-    // Signs new tokens (used at login)
     @Bean
     JwtEncoder jwtEncoder() {
         return new NimbusJwtEncoder(new ImmutableSecret<>(jwtSecret.getBytes()));
     }
 
-    // Verifies the tokens that arrive in each request
     @Bean
     JwtDecoder jwtDecoder() {
         SecretKeySpec key = new SecretKeySpec(jwtSecret.getBytes(), "HmacSHA512");
         return NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS512).build();
     }
 
-    // Reads the "role" claim of the token (e.g. "ADMIN") and turns it into ROLE_ADMIN
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();
@@ -85,7 +84,6 @@ public class SecurityConfig {
         return converter;
     }
 
-    // Passwords are always stored hashed with BCrypt, never in plain text
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
