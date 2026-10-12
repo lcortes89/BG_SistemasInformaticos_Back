@@ -6,5 +6,7 @@ public interface ServiceService {
 
     List<Service> getAllServices();
 
-    List<Service> getServicesByBrandId(Long brandId);  // NEW
+    List<Service> getServicesByBrandId(Long brandId);
+
+    List<Service> getFeaturedServices();  // NEW
 }

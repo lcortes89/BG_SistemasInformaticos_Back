@@ -31,7 +31,6 @@ class ServiceServiceImplTest {
         assertThat(result.get(0).getName()).isEqualTo("Web Design");
     }
 
-    // NEW: returns only the services of the requested brand
     @Test
     void shouldReturnServicesByBrandId() {
         Service bdpNet = new Service(1L, "BDP .Net", "Classic version", "bdp-net.jpg");
@@ -42,5 +41,18 @@ class ServiceServiceImplTest {
 
         assertThat(result).hasSize(2);
         assertThat(result).extracting(Service::getName).containsExactly("BDP .Net", "BDP One");
+    }
+
+    // NEW: returns only featured services
+    @Test
+    void shouldReturnFeaturedServices() {
+        Service bdpOne = new Service(2L, "BDP One", "Multiplatform version", "bdp-one.jpg");
+        bdpOne.setFeatured(true);
+        when(serviceRepository.findByFeaturedTrue()).thenReturn(List.of(bdpOne));
+
+        List<Service> result = serviceService.getFeaturedServices();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).isFeatured()).isTrue();
     }
 }

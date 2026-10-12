@@ -37,4 +37,19 @@ class ServiceControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Web Design"));
     }
+
+    // NEW: ?featured=true returns only featured services
+    @Test
+    void shouldReturnOnlyFeaturedServicesWhenFilterIsTrue() throws Exception {
+        Service bdpOne = new Service(2L, "BDP One", "Multiplatform version", "bdp-one.jpg");
+        ServiceDTO dto = new ServiceDTO(2L, "BDP One", "Multiplatform version", "bdp-one.jpg");
+
+        when(serviceService.getFeaturedServices()).thenReturn(List.of(bdpOne));
+        when(serviceMapper.toDTO(bdpOne)).thenReturn(dto);
+
+        mockMvc.perform(get("/api/services").param("featured", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("BDP One"));
+    }
 }
