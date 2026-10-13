@@ -79,7 +79,7 @@
 		</dependency>
 	</dependencies>
 
-	<build>
+		<build>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -92,6 +92,37 @@
 						</exclude>
 					</excludes>
 				</configuration>
+			</plugin>
+
+			<!-- Test coverage report: target/site/jacoco/index.html (BGSI-194) -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.13</version>
+				<configuration>
+					<excludes>
+						<!-- Nothing to test: app entry point and plain data records -->
+						<exclude>com/bgsistemas/api/ApiApplication.class</exclude>
+						<exclude>com/bgsistemas/api/**/dtos/**</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<!-- Starts the JaCoCo agent before the tests run -->
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<!-- Writes the HTML report when the tests finish -->
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
