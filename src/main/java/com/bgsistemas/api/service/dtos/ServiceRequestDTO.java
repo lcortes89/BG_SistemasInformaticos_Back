@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 // Body of POST and PUT /api/admin/services
 public record ServiceRequestDTO(
 
@@ -20,6 +22,16 @@ public record ServiceRequestDTO(
         boolean featured,
 
         @NotNull(message = "Brand is required")
-        Long brandId
+        Long brandId,
+
+        // BGSI-205: full product sheet (all optional)
+        @Size(max = 2000, message = "Long description must be at most 2000 characters")
+        String longDescription,
+
+        @Size(max = 6, message = "At most 6 features")
+        List<@Size(max = 100, message = "Each feature must be at most 100 characters") String> features,
+
+        @Size(max = 6, message = "At most 6 sectors")
+        List<@Size(max = 40, message = "Each sector must be at most 40 characters") String> sectors
 ) {
 }
