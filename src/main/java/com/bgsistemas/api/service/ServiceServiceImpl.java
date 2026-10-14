@@ -67,6 +67,7 @@ public class ServiceServiceImpl implements ServiceService {
         service.setLongDescription(changes.getLongDescription());
         service.setFeatures(changes.getFeatures());
         service.setSectors(changes.getSectors());
+        service.setOfficialUrl(changes.getOfficialUrl());
         service.setBrand(findBrand(brandId));
         return serviceRepository.save(service);
     }

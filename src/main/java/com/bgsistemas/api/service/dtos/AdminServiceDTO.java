@@ -13,6 +13,7 @@ public record AdminServiceDTO(
         String brandName,
         String longDescription,
         List<String> features,
-        List<String> sectors
+        List<String> sectors,
+        String officialUrl
 ) {
 }

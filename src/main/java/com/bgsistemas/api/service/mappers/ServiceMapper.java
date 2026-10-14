@@ -28,6 +28,7 @@ public class ServiceMapper {
         dto.setLongDescription(service.getLongDescription());
         dto.setFeatures(List.copyOf(service.getFeatures()));
         dto.setSectors(List.copyOf(service.getSectors()));
+        dto.setOfficialUrl(service.getOfficialUrl());
         return dto;
     }
 
@@ -45,7 +46,8 @@ public class ServiceMapper {
                 brand != null ? brand.getName() : null,
                 service.getLongDescription(),
                 List.copyOf(service.getFeatures()),
-                List.copyOf(service.getSectors())
+                List.copyOf(service.getSectors()),
+                service.getOfficialUrl()
         );
     }
 
@@ -61,6 +63,7 @@ public class ServiceMapper {
         service.setLongDescription(blankToNull(request.longDescription()));
         service.setFeatures(cleanList(request.features()));
         service.setSectors(cleanList(request.sectors()));
+        service.setOfficialUrl(blankToNull(request.officialUrl()));
         return service;
     }
 
