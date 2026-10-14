@@ -43,6 +43,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/services/**", "/api/brands/**", "/api/clients/**").permitAll()
+                        // Website settings, e.g. the photo of the hero (BGSI-229)
+                        .requestMatchers(HttpMethod.GET, "/api/settings/**").permitAll()
                         // Uploaded images (logos, products) are shown on the public website
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/contacts").permitAll()
