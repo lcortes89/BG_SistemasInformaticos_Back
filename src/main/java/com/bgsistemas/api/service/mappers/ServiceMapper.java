@@ -7,6 +7,8 @@ import com.bgsistemas.api.service.dtos.ServiceDTO;
 import com.bgsistemas.api.service.dtos.ServiceRequestDTO;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class ServiceMapper {
 
@@ -14,7 +16,7 @@ public class ServiceMapper {
     public ServiceDTO toDTO(Service service) {
         Brand brand = service.getBrand();
 
-        return new ServiceDTO(
+        ServiceDTO dto = new ServiceDTO(
                 service.getId(),
                 service.getName(),
                 service.getDescription(),
@@ -22,6 +24,11 @@ public class ServiceMapper {
                 brand != null ? brand.getId() : null,
                 brand != null ? brand.getName() : null
         );
+        // BGSI-205: full product sheet
+        dto.setLongDescription(service.getLongDescription());
+        dto.setFeatures(List.copyOf(service.getFeatures()));
+        dto.setSectors(List.copyOf(service.getSectors()));
+        return dto;
     }
 
     // Entity -> admin panel response
@@ -35,7 +42,10 @@ public class ServiceMapper {
                 service.getImageUrl(),
                 service.isFeatured(),
                 brand != null ? brand.getId() : null,
-                brand != null ? brand.getName() : null
+                brand != null ? brand.getName() : null,
+                service.getLongDescription(),
+                List.copyOf(service.getFeatures()),
+                List.copyOf(service.getSectors())
         );
     }
 
@@ -48,10 +58,24 @@ public class ServiceMapper {
                 blankToNull(request.imageUrl())
         );
         service.setFeatured(request.featured());
+        service.setLongDescription(blankToNull(request.longDescription()));
+        service.setFeatures(cleanList(request.features()));
+        service.setSectors(cleanList(request.sectors()));
         return service;
     }
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    // Trims every text and drops the empty ones (and line breaks, which the converter uses)
+    private List<String> cleanList(List<String> values) {
+        if (values == null) {
+            return List.of();
+        }
+        return values.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .map(value -> value.replace("\n", " ").replace("\r", " ").trim())
+                .toList();
     }
 }

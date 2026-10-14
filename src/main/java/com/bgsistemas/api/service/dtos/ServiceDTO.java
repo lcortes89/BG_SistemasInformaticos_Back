@@ -1,5 +1,8 @@
 package com.bgsistemas.api.service.dtos;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ServiceDTO {
 
     private Long id;
@@ -8,6 +11,11 @@ public class ServiceDTO {
     private String imageUrl;
     private Long brandId;      // NEW
     private String brandName;  // NEW
+
+    // BGSI-205: full product sheet
+    private String longDescription;
+    private List<String> features = new ArrayList<>();
+    private List<String> sectors = new ArrayList<>();
 
     public ServiceDTO() {
     }
@@ -42,4 +50,12 @@ public class ServiceDTO {
     public void setBrandId(Long brandId) { this.brandId = brandId; }
     public String getBrandName() { return brandName; }
     public void setBrandName(String brandName) { this.brandName = brandName; }
+
+    // BGSI-205
+    public String getLongDescription() { return longDescription; }
+    public void setLongDescription(String longDescription) { this.longDescription = longDescription; }
+    public List<String> getFeatures() { return features; }
+    public void setFeatures(List<String> features) { this.features = features; }
+    public List<String> getSectors() { return sectors; }
+    public void setSectors(List<String> sectors) { this.sectors = sectors; }
 }
