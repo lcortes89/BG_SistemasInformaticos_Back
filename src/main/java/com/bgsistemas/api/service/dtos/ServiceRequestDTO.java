@@ -2,6 +2,7 @@ package com.bgsistemas.api.service.dtos;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
@@ -32,6 +33,11 @@ public record ServiceRequestDTO(
         List<@Size(max = 100, message = "Each feature must be at most 100 characters") String> features,
 
         @Size(max = 6, message = "At most 6 sectors")
-        List<@Size(max = 40, message = "Each sector must be at most 40 characters") String> sectors
+        List<@Size(max = 40, message = "Each sector must be at most 40 characters") String> sectors,
+
+        // Official product page: optional (empty is fine), otherwise it must be a web address
+        @Size(max = 255, message = "Official URL must be at most 255 characters")
+        @Pattern(regexp = "^$|^https?://\\S+$", message = "Official URL must start with http:// or https://")
+        String officialUrl
 ) {
 }

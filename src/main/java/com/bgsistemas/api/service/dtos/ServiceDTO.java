@@ -16,6 +16,7 @@ public class ServiceDTO {
     private String longDescription;
     private List<String> features = new ArrayList<>();
     private List<String> sectors = new ArrayList<>();
+    private String officialUrl;
 
     public ServiceDTO() {
     }
@@ -58,4 +59,6 @@ public class ServiceDTO {
     public void setFeatures(List<String> features) { this.features = features; }
     public List<String> getSectors() { return sectors; }
     public void setSectors(List<String> sectors) { this.sectors = sectors; }
+    public String getOfficialUrl() { return officialUrl; }
+    public void setOfficialUrl(String officialUrl) { this.officialUrl = officialUrl; }
 }

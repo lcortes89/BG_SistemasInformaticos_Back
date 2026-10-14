@@ -42,6 +42,9 @@ public class Service {
     @Column(length = 500)
     private List<String> sectors = new ArrayList<>();
 
+    // Link to the official product page (maker website)
+    private String officialUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "brand_id")
     private Brand brand;
@@ -121,6 +124,14 @@ public class Service {
 
     public void setSectors(List<String> sectors) {
         this.sectors = sectors == null ? new ArrayList<>() : new ArrayList<>(sectors);
+    }
+
+    public String getOfficialUrl() {
+        return officialUrl;
+    }
+
+    public void setOfficialUrl(String officialUrl) {
+        this.officialUrl = officialUrl;
     }
 
     public Brand getBrand() {
