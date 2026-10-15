@@ -17,8 +17,8 @@ class RateCalculatorTest {
 
     private final RateCalculator calculator = new RateCalculator();
 
-    private RateRule rule(String amount, AdjustmentType type) {
-        return new RateRule(RateCategory.BUSINESS_TYPE, "ANY", "Any", new BigDecimal(amount), type);
+    private RateOption rule(String amount, AdjustmentType type) {
+        return new RateOption(null, "Any", null, new BigDecimal(amount), type);
     }
 
     // price = base x factor + posCount + space + squareMeters
@@ -32,7 +32,7 @@ class RateCalculatorTest {
     })
     void shouldCalculateTheMonthlyPrice(String base, String factor, String pos, String space,
                                         String meters, String expected) {
-        List<RateRule> rules = List.of(
+        List<RateOption> rules = List.of(
                 rule(base, AdjustmentType.BASE),
                 rule(factor, AdjustmentType.FACTOR),
                 rule(pos, AdjustmentType.ADDITION),
@@ -68,7 +68,7 @@ class RateCalculatorTest {
 
     @Test
     void shouldFailWhenThereIsNoBasePrice() {
-        List<RateRule> onlyAdditions = List.of(rule("10", AdjustmentType.ADDITION));
+        List<RateOption> onlyAdditions = List.of(rule("10", AdjustmentType.ADDITION));
 
         assertThatThrownBy(() -> calculator.calculate(onlyAdditions))
                 .isInstanceOf(MissingRateRuleException.class)
