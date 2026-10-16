@@ -1,6 +1,7 @@
 package com.bgsistemas.api.contact;
 
 import com.bgsistemas.api.contact.exceptions.ContactNotFoundException;
+import com.bgsistemas.api.notification.NotificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,6 +27,9 @@ class ContactServiceImplTest {
     @Mock
     private ContactRepository contactRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private ContactServiceImpl contactService;
 
@@ -44,6 +48,7 @@ class ContactServiceImplTest {
 
         assertThat(result.getName()).isEqualTo("Ana López");
         verify(contactRepository).save(contact);
+        verify(notificationService).notifyNewContact(contact); // BGSI-53
     }
 
     @Test
@@ -56,6 +61,7 @@ class ContactServiceImplTest {
                 .hasMessageContaining("GDPR");
 
         verify(contactRepository, never()).save(any());
+        verify(notificationService, never()).notifyNewContact(any());
     }
 
     @Test

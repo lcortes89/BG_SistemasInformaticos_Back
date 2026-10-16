@@ -1,6 +1,7 @@
 package com.bgsistemas.api.contact;
 
 import com.bgsistemas.api.contact.exceptions.ContactNotFoundException;
+import com.bgsistemas.api.notification.NotificationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -9,9 +10,11 @@ import org.springframework.stereotype.Component;
 public class ContactServiceImpl implements ContactService {
 
     private final ContactRepository contactRepository;
+    private final NotificationService notificationService;
 
-    public ContactServiceImpl(ContactRepository contactRepository) {
+    public ContactServiceImpl(ContactRepository contactRepository, NotificationService notificationService) {
         this.contactRepository = contactRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -20,7 +23,10 @@ public class ContactServiceImpl implements ContactService {
         if (!contact.isGdprConsent()) {
             throw new IllegalArgumentException("GDPR consent is required to store a contact");
         }
-        return contactRepository.save(contact);
+        Contact saved = contactRepository.save(contact);
+        // BGSI-53: email to the business (in the background, it never breaks the form)
+        notificationService.notifyNewContact(saved);
+        return saved;
     }
 
     @Override
