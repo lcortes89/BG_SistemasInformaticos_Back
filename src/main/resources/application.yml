@@ -10,6 +10,18 @@ spring:
       # Spring's own limit (above ours, so our 2 MB message is the one the user sees)
       max-file-size: 5MB
       max-request-size: 5MB
+  # BGSI-120: Gmail SMTP. The password is a Gmail "app password", only in .env
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": true
+      "[mail.smtp.connectiontimeout]": 5000
+      "[mail.smtp.timeout]": 5000
+      "[mail.smtp.writetimeout]": 5000
 app:
   jwt:
     secret: ${JWT_SECRET}
@@ -19,3 +31,8 @@ app:
     password: ${ADMIN_PASSWORD}
   uploads:
     dir: uploads
+  mail:
+    # Who receives the "new contact" emails (the business)
+    to: ${MAIL_TO:}
+    from: ${MAIL_USERNAME:}
+    panel-url: ${MAIL_PANEL_URL:http://localhost:5173/admin/contactos}
