@@ -67,6 +67,13 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request, null);
     }
 
+    // 503: an outside service failed (e.g. Gmail could not send an email)
+    @ExceptionHandler(ExternalServiceException.class)
+    public ResponseEntity<ApiErrorDTO> handleExternalService(ExternalServiceException ex, HttpServletRequest request) {
+        log.warn("External service error on {}: {}", request.getRequestURI(), ex.getMessage());
+        return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request, null);
+    }
+
     // Anything else: Spring's own errors keep their status (404 route, 405 method...),
     // unexpected ones become 500 without exposing technical details
     @ExceptionHandler(Exception.class)
