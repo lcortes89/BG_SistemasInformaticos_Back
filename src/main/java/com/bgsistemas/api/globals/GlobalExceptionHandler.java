@@ -1,5 +1,6 @@
 package com.bgsistemas.api.globals;
 
+import com.bgsistemas.api.account.exceptions.InvalidPasswordChangeException;
 import com.bgsistemas.api.auth.exceptions.EmailAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -47,6 +48,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorDTO> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
+    // 400 linked to one field (BGSI-272): wrong current password, new one equal to the current one
+    @ExceptionHandler(InvalidPasswordChangeException.class)
+    public ResponseEntity<ApiErrorDTO> handleInvalidPasswordChange(InvalidPasswordChangeException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, Map.of(ex.getField(), ex.getMessage()));
     }
 
     // 404: any of our "not found" exceptions
