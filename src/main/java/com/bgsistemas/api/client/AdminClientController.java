@@ -4,6 +4,7 @@ import com.bgsistemas.api.client.dtos.AdminClientDTO;
 import com.bgsistemas.api.client.dtos.ClientRequestDTO;
 import com.bgsistemas.api.client.mappers.ClientMapper;
 import com.bgsistemas.api.globals.PageResponseDTO;
+import com.bgsistemas.api.security.RequiresConfirmation;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -54,7 +55,8 @@ public class AdminClientController {
         return clientMapper.toAdminDTO(clientService.updateClient(id, clientMapper.toEntity(request)));
     }
 
-    // DELETE /api/admin/clients/{id} -> 204 No Content
+    // DELETE /api/admin/clients/{id} -> 204 No Content. Needs the password (BGSI-275)
+    @RequiresConfirmation
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
         clientService.deleteClient(id);

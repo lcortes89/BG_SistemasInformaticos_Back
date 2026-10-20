@@ -4,6 +4,7 @@ import com.bgsistemas.api.brand.dtos.AdminBrandDTO;
 import com.bgsistemas.api.brand.dtos.BrandRequestDTO;
 import com.bgsistemas.api.brand.mappers.BrandMapper;
 import com.bgsistemas.api.globals.PageResponseDTO;
+import com.bgsistemas.api.security.RequiresConfirmation;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -54,7 +55,8 @@ public class AdminBrandController {
         return toAdminDTO(brandService.updateBrand(id, brandMapper.toEntity(request)));
     }
 
-    // DELETE /api/admin/brands/{id} -> 204 No Content (409 if it still has services)
+    // DELETE /api/admin/brands/{id} -> 204 No Content (409 if it still has services). Needs the password (BGSI-275)
+    @RequiresConfirmation
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBrand(@PathVariable Long id) {
         brandService.deleteBrand(id);

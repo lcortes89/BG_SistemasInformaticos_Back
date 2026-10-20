@@ -1,5 +1,7 @@
 package com.bgsistemas.api.notification;
 
+import com.bgsistemas.api.security.ConfirmationInterceptor;
+import com.bgsistemas.api.security.ConfirmationTokenService;
 import com.bgsistemas.api.security.SecurityUser;
 import com.bgsistemas.api.user.Role;
 import com.bgsistemas.api.user.User;
@@ -16,6 +18,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.timeout;
@@ -38,6 +42,9 @@ class MailSettingsIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private ConfirmationTokenService confirmationTokens;
+
     @MockitoBean
     private JavaMailSender mailSender;
 
@@ -53,7 +60,10 @@ class MailSettingsIntegrationTest {
                 .andExpect(jsonPath("$.notifyEmail").value("env@test.com"))
                 .andExpect(jsonPath("$.senderAccount").value("web@test.com"));
 
+        // BGSI-275: changing the recipient needs the password typed again
+        String confirmToken = confirmationTokens.issue("admin@mail.com", Instant.now());
         mockMvc.perform(put("/api/admin/settings/mail").with(user(admin))
+                        .header(ConfirmationInterceptor.HEADER, confirmToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"notifyEmail\": \"duenio@test.com\", \"senderName\": \"Web de BG\" }"))
                 .andExpect(status().isOk())
