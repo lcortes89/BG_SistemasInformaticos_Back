@@ -14,6 +14,8 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
@@ -58,20 +60,29 @@ class PasswordResetEmailSenderTest {
     }
 
     @Test
-    void sendsTheNoAccountNoticeWithoutAnyLink() throws Exception {
+    void sendsTheSecurityAlertToEveryAdmin() throws Exception {
         when(mailSenderProvider.getIfAvailable()).thenReturn(mailSender);
         when(mailSettingsService.getSettings()).thenReturn(settings);
         when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+        UnknownEmailAlarm.Alert alert = new UnknownEmailAlarm.Alert(12, List.of("nobody@mail.com", "luisa@hotmal.com"));
 
-        sender().sendNoAccount("nobody@mail.com");
+        sender().sendUnknownEmailAlert(List.of("admin@mail.com", "other@mail.com"), alert);
 
         ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
         verify(mailSender).send(sent.capture());
-        assertThat(sent.getValue().getRecipients(Message.RecipientType.TO)[0].toString()).isEqualTo("nobody@mail.com");
-        assertThat(sent.getValue().getSubject()).isEqualTo(PasswordResetEmailSender.NO_ACCOUNT_SUBJECT);
-        assertThat(PasswordResetEmailSender.noAccountText()).contains("no hay ninguna cuenta de administrador");
-        assertThat(PasswordResetEmailSender.noAccountHtml()).contains("No hay ninguna cuenta con este correo")
-                .contains("cid:logo").doesNotContain("href=");
+        assertThat(sent.getValue().getRecipients(Message.RecipientType.TO)).hasSize(2);
+        assertThat(sent.getValue().getSubject()).isEqualTo(PasswordResetEmailSender.ALERT_SUBJECT);
+        assertThat(PasswordResetEmailSender.alertText(alert)).contains("12 veces").contains("- luisa@hotmal.com");
+        assertThat(PasswordResetEmailSender.alertHtml(alert)).contains("<strong>12 veces</strong>")
+                .contains("<li>nobody@mail.com</li>").doesNotContain("href=");
+    }
+
+    @Test
+    void escapesTheEmailsTypedByTheVisitor() {
+        UnknownEmailAlarm.Alert alert = new UnknownEmailAlarm.Alert(10, List.of("<b>x</b>@mail.com"));
+
+        assertThat(PasswordResetEmailSender.alertHtml(alert)).contains("&lt;b&gt;x&lt;/b&gt;@mail.com")
+                .doesNotContain("<b>x</b>");
     }
 
     @Test

@@ -14,6 +14,9 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -80,19 +83,21 @@ class PasswordResetIntegrationTest {
     }
 
     @Test
-    void anUnknownEmailGetsTheSameAnswerAndOnlyTheNoAccountNotice() throws Exception {
+    void anUnknownEmailGetsTheSameAnswerAndNoEmailIsSent() throws Exception {
         askForTheLink("nobody@test.com");
 
         verify(emailSender, never()).send(anyString(), anyString());
-        verify(emailSender).sendNoAccount("nobody@test.com");
+        verify(emailSender, never()).sendUnknownEmailAlert(anyList(), any());
     }
 
     @Test
-    void theNoAccountNoticeIsSentAtMostThreeTimesInFifteenMinutes() throws Exception {
-        for (int i = 0; i < 5; i++) {
-            askForTheLink("spam@test.com"); // always 202, also when nothing is sent
+    void manyUnknownEmailsSendOneAlertToTheAdmins() throws Exception {
+        userRepository.save(new User("alert-admin@test.com", passwordEncoder.encode("OldPass2026"), Role.ADMIN));
+
+        for (int i = 0; i < 12; i++) {
+            askForTheLink("bot" + i + "@test.com"); // always 202
         }
 
-        verify(emailSender, times(3)).sendNoAccount("spam@test.com");
+        verify(emailSender, times(1)).sendUnknownEmailAlert(argThat(admins -> admins.contains("alert-admin@test.com")), any());
     }
 }
