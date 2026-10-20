@@ -3,6 +3,7 @@ package com.bgsistemas.api.auth;
 import com.bgsistemas.api.auth.dtos.LoginResponseDTO;
 import com.bgsistemas.api.auth.dtos.RegisterRequestDTO;
 import com.bgsistemas.api.auth.dtos.RegisterResponseDTO;
+import com.bgsistemas.api.security.RequiresConfirmation;
 import com.bgsistemas.api.security.SecurityUser;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -29,7 +30,8 @@ public class AuthController {
         return authService.login(principal.getUser());
     }
 
-    // POST /api/auth/register -> only an authenticated ADMIN can create another admin
+    // POST /api/auth/register -> only an authenticated ADMIN can create another admin. Needs the password (BGSI-275)
+    @RequiresConfirmation
     @PostMapping("/register")
     public ResponseEntity<RegisterResponseDTO> register(@Valid @RequestBody RegisterRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));

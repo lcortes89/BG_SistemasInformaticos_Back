@@ -2,9 +2,12 @@ package com.bgsistemas.api.globals;
 
 import com.bgsistemas.api.account.exceptions.InvalidPasswordChangeException;
 import com.bgsistemas.api.auth.exceptions.EmailAlreadyExistsException;
+import com.bgsistemas.api.security.ConfirmationRequiredException;
+import com.bgsistemas.api.security.TooManyAttemptsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -54,6 +57,23 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidPasswordChangeException.class)
     public ResponseEntity<ApiErrorDTO> handleInvalidPasswordChange(InvalidPasswordChangeException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, Map.of(ex.getField(), ex.getMessage()));
+    }
+
+    // 403 (BGSI-275): sensitive action without the password confirmation.
+    // details.reason lets the frontend open the password confirmation dialog
+    @ExceptionHandler(ConfirmationRequiredException.class)
+    public ResponseEntity<ApiErrorDTO> handleConfirmationRequired(ConfirmationRequiredException ex, HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage(), request, Map.of("reason", "CONFIRMATION_REQUIRED"));
+    }
+
+    // 429 (BGSI-275): too many wrong passwords when confirming, same answer as the login lock
+    @ExceptionHandler(TooManyAttemptsException.class)
+    public ResponseEntity<ApiErrorDTO> handleTooManyAttempts(TooManyAttemptsException ex, HttpServletRequest request) {
+        ApiErrorDTO body = build(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request,
+                Map.of("retryAfterMinutes", String.valueOf(ex.getRetryAfterMinutes()))).getBody();
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(body);
     }
 
     // 404: any of our "not found" exceptions

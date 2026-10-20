@@ -2,6 +2,7 @@ package com.bgsistemas.api.notification;
 
 import com.bgsistemas.api.notification.dtos.MailSettingsDTO;
 import com.bgsistemas.api.notification.dtos.MailSettingsRequestDTO;
+import com.bgsistemas.api.security.RequiresConfirmation;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +32,8 @@ public class AdminMailSettingsController {
         return MailSettingsDTO.from(mailSettingsService.getSettings());
     }
 
-    // PUT /api/admin/settings/mail { notifyEmail, senderName }
+    // PUT /api/admin/settings/mail { notifyEmail, senderName }. Needs the password (BGSI-275)
+    @RequiresConfirmation
     @PutMapping
     public MailSettingsDTO updateSettings(@Valid @RequestBody MailSettingsRequestDTO request) {
         return MailSettingsDTO.from(mailSettingsService.updateSettings(request.notifyEmail(), request.senderName()));

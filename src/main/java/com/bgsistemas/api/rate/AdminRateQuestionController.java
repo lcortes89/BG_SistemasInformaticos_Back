@@ -6,6 +6,7 @@ import com.bgsistemas.api.rate.dtos.RateOptionRequestDTO;
 import com.bgsistemas.api.rate.dtos.RateQuestionOrderDTO;
 import com.bgsistemas.api.rate.dtos.RateQuestionRequestDTO;
 import com.bgsistemas.api.rate.mappers.RateQuestionMapper;
+import com.bgsistemas.api.security.RequiresConfirmation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -57,7 +58,8 @@ public class AdminRateQuestionController {
         return rateQuestionMapper.toAdminDTO(rateQuestionService.updateQuestion(id, rateQuestionMapper.toEntity(request)));
     }
 
-    // Deletes the question and its options
+    // Deletes the question and its options. Needs the password (BGSI-275)
+    @RequiresConfirmation
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteQuestion(@PathVariable Long id) {
         rateQuestionService.deleteQuestion(id);
@@ -79,6 +81,8 @@ public class AdminRateQuestionController {
                 rateQuestionService.updateOption(optionId, rateQuestionMapper.toEntity(request)));
     }
 
+    // Needs the password (BGSI-275)
+    @RequiresConfirmation
     @DeleteMapping("/options/{optionId}")
     public ResponseEntity<Void> deleteOption(@PathVariable Long optionId) {
         rateQuestionService.deleteOption(optionId);

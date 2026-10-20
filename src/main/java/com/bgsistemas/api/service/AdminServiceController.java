@@ -1,6 +1,7 @@
 package com.bgsistemas.api.service;
 
 import com.bgsistemas.api.globals.PageResponseDTO;
+import com.bgsistemas.api.security.RequiresConfirmation;
 import com.bgsistemas.api.service.dtos.AdminServiceDTO;
 import com.bgsistemas.api.service.dtos.ServiceRequestDTO;
 import com.bgsistemas.api.service.mappers.ServiceMapper;
@@ -57,7 +58,8 @@ public class AdminServiceController {
         return serviceMapper.toAdminDTO(updated);
     }
 
-    // DELETE /api/admin/services/{id} -> 204 No Content
+    // DELETE /api/admin/services/{id} -> 204 No Content. Needs the password (BGSI-275)
+    @RequiresConfirmation
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteService(@PathVariable Long id) {
         serviceService.deleteService(id);
