@@ -1,5 +1,6 @@
 package com.bgsistemas.api.account.dtos;
 
+import com.bgsistemas.api.globals.PasswordPolicy;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -10,11 +11,9 @@ public record ChangePasswordRequestDTO(
         @NotBlank(message = "Current password is required")
         String currentPassword,
 
-        // 72 = the most that BCrypt can use
         @NotBlank(message = "New password is required")
-        @Size(min = 10, max = 72, message = "New password must have between 10 and 72 characters")
-        @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$",
-                message = "New password needs an uppercase letter, a lowercase letter and a number")
+        @Size(min = PasswordPolicy.MIN_LENGTH, max = PasswordPolicy.MAX_LENGTH, message = PasswordPolicy.SIZE_MESSAGE)
+        @Pattern(regexp = PasswordPolicy.PATTERN, message = PasswordPolicy.PATTERN_MESSAGE)
         String newPassword
 ) {
 }
