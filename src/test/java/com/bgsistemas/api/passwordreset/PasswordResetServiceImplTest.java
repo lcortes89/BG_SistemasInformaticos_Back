@@ -20,6 +20,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -45,7 +46,7 @@ class PasswordResetServiceImplTest {
     private PasswordResetEmailSender emailSender;
 
     @Mock
-    private UnknownEmailThrottle unknownEmailThrottle;
+    private UnknownEmailAlarm unknownEmailAlarm;
 
     @InjectMocks
     private PasswordResetServiceImpl service;
@@ -74,25 +75,39 @@ class PasswordResetServiceImplTest {
     }
 
     @Test
-    void tellsTheMailboxOwnerWhenTheEmailIsNotAnAdmin() {
+    void sendsNothingToAnEmailThatIsNotAnAdmin() {
         when(userRepository.findByEmail("nobody@mail.com")).thenReturn(Optional.empty());
-        when(unknownEmailThrottle.tryAcquire(eq(" nobody@mail.com "), any())).thenReturn(true);
+        when(unknownEmailAlarm.record(eq(" nobody@mail.com "), any())).thenReturn(Optional.empty());
 
         service.requestReset(" nobody@mail.com ");
 
-        verify(emailSender).sendNoAccount("nobody@mail.com");
         verify(tokenRepository, never()).save(any());
         verify(emailSender, never()).send(anyString(), anyString());
+        verify(emailSender, never()).sendUnknownEmailAlert(anyList(), any());
     }
 
     @Test
-    void stopsTheNoAccountEmailsWhenTheLimitIsReached() {
+    void alertsEveryAdminWhenThereAreManyUnknownEmails() {
+        UnknownEmailAlarm.Alert alert = new UnknownEmailAlarm.Alert(10, List.of("nobody@mail.com"));
         when(userRepository.findByEmail("nobody@mail.com")).thenReturn(Optional.empty());
-        when(unknownEmailThrottle.tryAcquire(eq("nobody@mail.com"), any())).thenReturn(false);
+        when(unknownEmailAlarm.record(eq("nobody@mail.com"), any())).thenReturn(Optional.of(alert));
+        when(userRepository.findByRole(Role.ADMIN)).thenReturn(List.of(admin, new User("other@mail.com", "x", Role.ADMIN)));
 
         service.requestReset("nobody@mail.com");
 
-        verify(emailSender, never()).sendNoAccount(anyString());
+        verify(emailSender).sendUnknownEmailAlert(List.of(EMAIL, "other@mail.com"), alert);
+    }
+
+    @Test
+    void doesNotAlertWhenThereAreNoAdmins() {
+        UnknownEmailAlarm.Alert alert = new UnknownEmailAlarm.Alert(10, List.of("nobody@mail.com"));
+        when(userRepository.findByEmail("nobody@mail.com")).thenReturn(Optional.empty());
+        when(unknownEmailAlarm.record(eq("nobody@mail.com"), any())).thenReturn(Optional.of(alert));
+        when(userRepository.findByRole(Role.ADMIN)).thenReturn(List.of());
+
+        service.requestReset("nobody@mail.com");
+
+        verify(emailSender, never()).sendUnknownEmailAlert(anyList(), any());
     }
 
     @Test

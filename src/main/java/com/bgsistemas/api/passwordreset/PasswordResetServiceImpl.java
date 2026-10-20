@@ -1,8 +1,11 @@
 package com.bgsistemas.api.passwordreset;
 
 import com.bgsistemas.api.passwordreset.exceptions.InvalidResetTokenException;
+import com.bgsistemas.api.user.Role;
 import com.bgsistemas.api.user.User;
 import com.bgsistemas.api.user.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +19,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -25,22 +29,23 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     static final Duration REQUEST_WINDOW = Duration.ofMinutes(15);
     static final int MAX_REQUESTS_PER_WINDOW = 3;
 
+    private static final Logger log = LoggerFactory.getLogger(PasswordResetServiceImpl.class);
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetEmailSender emailSender;
-    private final UnknownEmailThrottle unknownEmailThrottle;
+    private final UnknownEmailAlarm unknownEmailAlarm;
 
     public PasswordResetServiceImpl(UserRepository userRepository, PasswordResetTokenRepository tokenRepository,
                                     PasswordEncoder passwordEncoder, PasswordResetEmailSender emailSender,
-                                    UnknownEmailThrottle unknownEmailThrottle) {
+                                    UnknownEmailAlarm unknownEmailAlarm) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailSender = emailSender;
-        this.unknownEmailThrottle = unknownEmailThrottle;
+        this.unknownEmailAlarm = unknownEmailAlarm;
     }
 
     @Override
@@ -49,11 +54,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         Instant now = Instant.now();
         Optional<User> found = userRepository.findByEmail(email.trim());
         if (found.isEmpty()) {
-            // BGSI-291: the screen gives the same answer as for a real admin (nobody can find out which
-            // emails exist), but the owner of the mailbox gets a "there is no account" email
-            if (unknownEmailThrottle.tryAcquire(email, now)) {
-                emailSender.sendNoAccount(email.trim()); // @Async: the answer does not wait for Gmail
-            }
+            // Same answer as for a real admin: nobody can find out which emails exist (OWASP).
+            // BGSI-291: the request is logged and, if there are many, the admins get one alert
+            log.info("Password reset asked for an email with no account: {}", email.trim());
+            unknownEmailAlarm.record(email, now).ifPresent(this::alertAdmins);
             return;
         }
         User user = found.get();
@@ -84,6 +88,15 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         // This link and any other link still pending for this user can no longer be used
         tokenRepository.findByUserAndUsedAtIsNull(user).forEach(pending -> pending.markUsed(now));
         resetToken.markUsed(now);
+    }
+
+    private void alertAdmins(UnknownEmailAlarm.Alert alert) {
+        List<String> admins = userRepository.findByRole(Role.ADMIN).stream().map(User::getEmail).toList();
+        log.warn("{} password reset requests with unknown emails in 15 minutes: alerting {} admins",
+                alert.attempts(), admins.size());
+        if (!admins.isEmpty()) {
+            emailSender.sendUnknownEmailAlert(admins, alert); // @Async: the answer does not wait for Gmail
+        }
     }
 
     // 32 random bytes -> 43 characters that are safe in a URL

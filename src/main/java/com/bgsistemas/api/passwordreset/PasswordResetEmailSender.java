@@ -15,18 +15,21 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.HtmlUtils;
 
 import java.io.UnsupportedEncodingException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 // BGSI-273: the "Crea una nueva contraseña" email, sent with the same Gmail account as the contact emails.
-// BGSI-291: also the "there is no account with this email" notice
+// BGSI-291: also the security alert for the admins when many requests use unknown emails
 @Component
 public class PasswordResetEmailSender {
 
     private static final Logger log = LoggerFactory.getLogger(PasswordResetEmailSender.class);
     private static final ClassPathResource LOGO = new ClassPathResource("pdf/logo.png");
     static final String SUBJECT = "Crea una nueva contraseña · Panel de BG Sistemas";
-    static final String NO_ACCOUNT_SUBJECT = "No hay ninguna cuenta con este correo · Panel de BG Sistemas";
+    static final String ALERT_SUBJECT = "Aviso de seguridad: intentos de recuperar contraseña · Panel de BG Sistemas";
 
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
     private final MailSettingsService mailSettingsService;
@@ -47,16 +50,16 @@ public class PasswordResetEmailSender {
     // @Async: the answer to the visitor is the same and as fast whether the email exists or not
     @Async
     public void send(String to, String token) {
-        deliver(to, SUBJECT, text(link(token)), html(link(token)));
+        deliver(new String[] {to}, SUBJECT, text(link(token)), html(link(token)));
     }
 
-    // BGSI-291: someone asked for a link with an email that is not an admin
+    // BGSI-291: many requests with emails that are not an admin -> one email to every admin
     @Async
-    public void sendNoAccount(String to) {
-        deliver(to, NO_ACCOUNT_SUBJECT, noAccountText(), noAccountHtml());
+    public void sendUnknownEmailAlert(List<String> admins, UnknownEmailAlarm.Alert alert) {
+        deliver(admins.toArray(String[]::new), ALERT_SUBJECT, alertText(alert), alertHtml(alert));
     }
 
-    private void deliver(String to, String subject, String text, String html) {
+    private void deliver(String[] to, String subject, String text, String html) {
         JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
         MailSettings settings = mailSettingsService.getSettings();
         if (mailSender == null || !StringUtils.hasText(settings.senderAccount())) {
@@ -72,9 +75,9 @@ public class PasswordResetEmailSender {
             helper.setText(text, html);
             helper.addInline("logo", LOGO);
             mailSender.send(message);
-            log.info("Password reset email \"{}\" sent to {}", subject, to);
+            log.info("Password reset email \"{}\" sent to {}", subject, String.join(", ", to));
         } catch (MailException | MessagingException | UnsupportedEncodingException e) {
-            log.warn("Password reset email could not be sent to {}: {}", to, e.getMessage());
+            log.warn("Password reset email could not be sent to {}: {}", String.join(", ", to), e.getMessage());
         }
     }
 
@@ -89,22 +92,28 @@ public class PasswordResetEmailSender {
                 """.formatted(link);
     }
 
-    static String noAccountText() {
+    static String alertText(UnknownEmailAlarm.Alert alert) {
         return """
-                Alguien ha pedido recuperar la contraseña del panel de BG Sistemas Informáticos con este correo,
-                pero no hay ninguna cuenta de administrador asociada a él.
+                En los últimos 15 minutos se ha pedido %d veces recuperar la contraseña del panel de BG Sistemas
+                con emails que no son de ningún administrador:
+                %s
 
-                Si has sido tú, prueba con el email con el que entras al panel o pide ayuda a otro administrador.
-                Si no has sido tú, ignora este mensaje: no tienes que hacer nada.
-                """;
+                Puede ser alguien que se ha equivocado de correo o un intento de ataque. Nadie ha podido entrar:
+                a esos emails no se les ha enviado ningún enlace. Si se repite a menudo, avisa al responsable técnico.
+                """.formatted(alert.attempts(), alert.emails().stream().map(email -> "- " + email).collect(Collectors.joining("\n")));
     }
 
-    static String noAccountHtml() {
+    static String alertHtml(UnknownEmailAlarm.Alert alert) {
+        // The emails were typed by a visitor: escaped so they cannot add HTML to the email
+        String emails = alert.emails().stream()
+                .map(email -> "<li>" + HtmlUtils.htmlEscape(email, "UTF-8") + "</li>")
+                .collect(Collectors.joining());
         return frame("""
-                <h1 style="margin:0 0 12px;font-size:19px;color:#0b1f3a;">No hay ninguna cuenta con este correo</h1>
-                <p style="margin:0 0 16px;font-size:14px;line-height:1.5;">Alguien ha pedido recuperar la contraseña del panel de administración de BG Sistemas Informáticos con este correo, pero <strong>no hay ninguna cuenta de administrador</strong> asociada a él.</p>
-                <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">Si has sido tú, prueba con el email con el que entras al panel o pide ayuda a otro administrador.<br>Si no has sido tú, ignora este mensaje: no tienes que hacer nada.</p>
-                """);
+                <h1 style="margin:0 0 12px;font-size:19px;color:#0b1f3a;">Aviso de seguridad</h1>
+                <p style="margin:0 0 12px;font-size:14px;line-height:1.5;">En los últimos 15 minutos se ha pedido <strong>%d veces</strong> recuperar la contraseña del panel con emails que <strong>no son de ningún administrador</strong>:</p>
+                <ul style="margin:0 0 16px;padding-left:20px;font-size:14px;line-height:1.5;">%s</ul>
+                <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">Puede ser alguien que se ha equivocado de correo o un intento de ataque. Nadie ha podido entrar: a esos emails no se les ha enviado ningún enlace.<br>Si se repite a menudo, avisa al responsable técnico.</p>
+                """.formatted(alert.attempts(), emails));
     }
 
     static String html(String link) {
