@@ -58,6 +58,23 @@ class PasswordResetEmailSenderTest {
     }
 
     @Test
+    void sendsTheNoAccountNoticeWithoutAnyLink() throws Exception {
+        when(mailSenderProvider.getIfAvailable()).thenReturn(mailSender);
+        when(mailSettingsService.getSettings()).thenReturn(settings);
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+
+        sender().sendNoAccount("nobody@mail.com");
+
+        ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender).send(sent.capture());
+        assertThat(sent.getValue().getRecipients(Message.RecipientType.TO)[0].toString()).isEqualTo("nobody@mail.com");
+        assertThat(sent.getValue().getSubject()).isEqualTo(PasswordResetEmailSender.NO_ACCOUNT_SUBJECT);
+        assertThat(PasswordResetEmailSender.noAccountText()).contains("no hay ninguna cuenta de administrador");
+        assertThat(PasswordResetEmailSender.noAccountHtml()).contains("No hay ninguna cuenta con este correo")
+                .contains("cid:logo").doesNotContain("href=");
+    }
+
+    @Test
     void theEmailContainsTheLinkWithTheToken() {
         String link = sender().link("abc123");
 

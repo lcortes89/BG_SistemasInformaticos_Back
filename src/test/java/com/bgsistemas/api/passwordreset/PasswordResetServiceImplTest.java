@@ -44,6 +44,9 @@ class PasswordResetServiceImplTest {
     @Mock
     private PasswordResetEmailSender emailSender;
 
+    @Mock
+    private UnknownEmailThrottle unknownEmailThrottle;
+
     @InjectMocks
     private PasswordResetServiceImpl service;
 
@@ -71,13 +74,25 @@ class PasswordResetServiceImplTest {
     }
 
     @Test
-    void doesNothingForAnEmailThatIsNotAnAdmin() {
+    void tellsTheMailboxOwnerWhenTheEmailIsNotAnAdmin() {
         when(userRepository.findByEmail("nobody@mail.com")).thenReturn(Optional.empty());
+        when(unknownEmailThrottle.tryAcquire(eq(" nobody@mail.com "), any())).thenReturn(true);
+
+        service.requestReset(" nobody@mail.com ");
+
+        verify(emailSender).sendNoAccount("nobody@mail.com");
+        verify(tokenRepository, never()).save(any());
+        verify(emailSender, never()).send(anyString(), anyString());
+    }
+
+    @Test
+    void stopsTheNoAccountEmailsWhenTheLimitIsReached() {
+        when(userRepository.findByEmail("nobody@mail.com")).thenReturn(Optional.empty());
+        when(unknownEmailThrottle.tryAcquire(eq("nobody@mail.com"), any())).thenReturn(false);
 
         service.requestReset("nobody@mail.com");
 
-        verify(tokenRepository, never()).save(any());
-        verify(emailSender, never()).send(anyString(), anyString());
+        verify(emailSender, never()).sendNoAccount(anyString());
     }
 
     @Test

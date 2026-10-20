@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -79,9 +80,19 @@ class PasswordResetIntegrationTest {
     }
 
     @Test
-    void anUnknownEmailGetsTheSameAnswerAndNoEmailIsSent() throws Exception {
+    void anUnknownEmailGetsTheSameAnswerAndOnlyTheNoAccountNotice() throws Exception {
         askForTheLink("nobody@test.com");
 
         verify(emailSender, never()).send(anyString(), anyString());
+        verify(emailSender).sendNoAccount("nobody@test.com");
+    }
+
+    @Test
+    void theNoAccountNoticeIsSentAtMostThreeTimesInFifteenMinutes() throws Exception {
+        for (int i = 0; i < 5; i++) {
+            askForTheLink("spam@test.com"); // always 202, also when nothing is sent
+        }
+
+        verify(emailSender, times(3)).sendNoAccount("spam@test.com");
     }
 }

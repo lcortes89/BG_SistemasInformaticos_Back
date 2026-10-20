@@ -31,24 +31,32 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetEmailSender emailSender;
+    private final UnknownEmailThrottle unknownEmailThrottle;
 
     public PasswordResetServiceImpl(UserRepository userRepository, PasswordResetTokenRepository tokenRepository,
-                                    PasswordEncoder passwordEncoder, PasswordResetEmailSender emailSender) {
+                                    PasswordEncoder passwordEncoder, PasswordResetEmailSender emailSender,
+                                    UnknownEmailThrottle unknownEmailThrottle) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailSender = emailSender;
+        this.unknownEmailThrottle = unknownEmailThrottle;
     }
 
     @Override
     @Transactional
     public void requestReset(String email) {
+        Instant now = Instant.now();
         Optional<User> found = userRepository.findByEmail(email.trim());
         if (found.isEmpty()) {
-            return; // same answer as for a real admin: nobody can find out which emails exist
+            // BGSI-291: the screen gives the same answer as for a real admin (nobody can find out which
+            // emails exist), but the owner of the mailbox gets a "there is no account" email
+            if (unknownEmailThrottle.tryAcquire(email, now)) {
+                emailSender.sendNoAccount(email.trim()); // @Async: the answer does not wait for Gmail
+            }
+            return;
         }
         User user = found.get();
-        Instant now = Instant.now();
 
         if (tokenRepository.countByUserAndCreatedAtAfter(user, now.minus(REQUEST_WINDOW)) >= MAX_REQUESTS_PER_WINDOW) {
             return; // too many emails in a short time: we stop sending (no error, same answer)
