@@ -2,7 +2,9 @@ package com.bgsistemas.api.config;
 
 import com.bgsistemas.api.security.JsonAccessDeniedHandler;
 import com.bgsistemas.api.security.JsonAuthenticationEntryPoint;
+import com.bgsistemas.api.security.PasswordChangedJwtValidator;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,9 +15,12 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -32,7 +37,7 @@ public class SecurityConfig {
     private String jwtSecret;
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder) throws Exception {
         JsonAuthenticationEntryPoint unauthorized = new JsonAuthenticationEntryPoint();
         JsonAccessDeniedHandler forbidden = new JsonAccessDeniedHandler();
 
@@ -63,7 +68,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(unauthorized)
                         .accessDeniedHandler(forbidden)
                         .jwt(jwt -> jwt
-                                .decoder(jwtDecoder())
+                                .decoder(jwtDecoder)
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
         return http.build();
@@ -74,10 +79,15 @@ public class SecurityConfig {
         return new NimbusJwtEncoder(new ImmutableSecret<>(jwtSecret.getBytes()));
     }
 
+    // Checks signature and expiry, and (BGSI-272) rejects tokens issued before the last password change.
+    // The validator is optional so the @WebMvcTest slices (no repositories) still start
     @Bean
-    JwtDecoder jwtDecoder() {
+    JwtDecoder jwtDecoder(ObjectProvider<PasswordChangedJwtValidator> passwordChangedValidator) {
         SecretKeySpec key = new SecretKeySpec(jwtSecret.getBytes(), "HmacSHA512");
-        return NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS512).build();
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS512).build();
+        passwordChangedValidator.ifAvailable(validator -> decoder.setJwtValidator(
+                new DelegatingOAuth2TokenValidator<Jwt>(JwtValidators.createDefault(), validator)));
+        return decoder;
     }
 
     @Bean

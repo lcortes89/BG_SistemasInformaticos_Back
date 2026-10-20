@@ -9,6 +9,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "users") // "user" is a reserved word in some databases
 public class User {
@@ -28,6 +30,9 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    // BGSI-272: tokens issued before this moment are no longer valid (null = never changed)
+    private Instant passwordChangedAt;
+
     public User() {
     }
 
@@ -44,4 +49,6 @@ public class User {
     public void setPassword(String password) { this.password = password; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+    public Instant getPasswordChangedAt() { return passwordChangedAt; }
+    public void setPasswordChangedAt(Instant passwordChangedAt) { this.passwordChangedAt = passwordChangedAt; }
 }
