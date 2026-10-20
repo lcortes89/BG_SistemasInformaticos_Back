@@ -2,6 +2,8 @@ package com.bgsistemas.api.config;
 
 import com.bgsistemas.api.security.JsonAccessDeniedHandler;
 import com.bgsistemas.api.security.JsonAuthenticationEntryPoint;
+import com.bgsistemas.api.security.LoginAttemptFilter;
+import com.bgsistemas.api.security.LoginAttemptService;
 import com.bgsistemas.api.security.PasswordChangedJwtValidator;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.beans.factory.ObjectProvider;
@@ -26,6 +28,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 import javax.crypto.spec.SecretKeySpec;
 
@@ -37,7 +40,8 @@ public class SecurityConfig {
     private String jwtSecret;
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder,
+                                            ObjectProvider<LoginAttemptService> loginAttempts) throws Exception {
         JsonAuthenticationEntryPoint unauthorized = new JsonAuthenticationEntryPoint();
         JsonAccessDeniedHandler forbidden = new JsonAccessDeniedHandler();
 
@@ -71,6 +75,10 @@ public class SecurityConfig {
                         .jwt(jwt -> jwt
                                 .decoder(jwtDecoder)
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())));
+
+        // BGSI-274: 5 wrong passwords -> 15 minutes locked. Optional so the @WebMvcTest slices still start
+        loginAttempts.ifAvailable(service ->
+                http.addFilterBefore(new LoginAttemptFilter(service), BasicAuthenticationFilter.class));
 
         return http.build();
     }
