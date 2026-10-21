@@ -41,7 +41,7 @@ public class AccountController {
     @PostMapping("/confirm")
     public ConfirmPasswordResponseDTO confirmPassword(@Valid @RequestBody ConfirmPasswordRequestDTO request,
                                                      Authentication authentication) {
-        String token = passwordConfirmationService.confirm(authentication.getName(), request.password());
+        String token = passwordConfirmationService.confirm(authentication.getName(), request.password(), request.code());
         return new ConfirmPasswordResponseDTO(token, ConfirmationTokenService.VALIDITY.toSeconds());
     }
 }

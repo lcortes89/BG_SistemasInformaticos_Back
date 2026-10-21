@@ -26,6 +26,9 @@ app:
   jwt:
     secret: ${JWT_SECRET}
     expiration-hours: 8
+  # BGSI-276: AES key that encrypts the 2FA secrets (32 bytes in Base64: openssl rand -base64 32)
+  totp:
+    encryption-key: ${TOTP_ENCRYPTION_KEY}
   admin:
     email: ${ADMIN_EMAIL}
     password: ${ADMIN_PASSWORD}

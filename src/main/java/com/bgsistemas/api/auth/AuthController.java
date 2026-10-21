@@ -24,10 +24,13 @@ public class AuthController {
         this.authService = authService;
     }
 
-    // POST /api/auth/login with HTTP Basic (email + password) -> JWT
+    // POST /api/auth/login with HTTP Basic (email + password) -> 200 JWT.
+    // BGSI-276: with 2FA on -> 202 { twoFactorRequired, pendingToken }. 202 is not counted as a finished login
+    // by LoginAttemptFilter, so the failures are not reset until the code is right
     @PostMapping("/login")
-    public LoginResponseDTO login(@AuthenticationPrincipal SecurityUser principal) {
-        return authService.login(principal.getUser());
+    public ResponseEntity<LoginResponseDTO> login(@AuthenticationPrincipal SecurityUser principal) {
+        LoginResponseDTO response = authService.login(principal.getUser());
+        return ResponseEntity.status(response.needsSecondStep() ? HttpStatus.ACCEPTED : HttpStatus.OK).body(response);
     }
 
     // POST /api/auth/register -> only an authenticated ADMIN can create another admin. Needs the password (BGSI-275)
