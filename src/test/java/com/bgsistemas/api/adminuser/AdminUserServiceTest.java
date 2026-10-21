@@ -31,7 +31,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// BGSI-277: invite, block, unblock, change email, reset 2FA and delete admins
+// BGSI-277: invite, block, unblock, reset 2FA and delete admins
 class AdminUserServiceTest {
 
     private final UserRepository userRepository = mock(UserRepository.class);
@@ -133,23 +133,6 @@ class AdminUserServiceTest {
         service.resendInvitation(2L, "luisa@bg.es");
 
         verify(passwordResetService).invite(other, "luisa@bg.es");
-    }
-
-    @Test
-    void changingTheEmailClosesTheSessionsAndTellsBothAddresses() {
-        AdminUserDTO changed = service.changeEmail(2L, " Maria.Nueva@bg.es ", "luisa@bg.es");
-
-        assertThat(changed.email()).isEqualTo("maria.nueva@bg.es");
-        assertThat(other.getPasswordChangedAt()).isNotNull();
-        assertThat(noticeRecipients()).contains("maria@bg.es", "maria.nueva@bg.es", "luisa@bg.es");
-    }
-
-    @Test
-    void cannotChangeToAnEmailThatAlreadyExists() {
-        when(userRepository.existsByEmail("luisa@bg.es")).thenReturn(true);
-
-        assertThatThrownBy(() -> service.changeEmail(2L, "luisa@bg.es", "luisa@bg.es"))
-                .isInstanceOf(EmailAlreadyExistsException.class);
     }
 
     @Test

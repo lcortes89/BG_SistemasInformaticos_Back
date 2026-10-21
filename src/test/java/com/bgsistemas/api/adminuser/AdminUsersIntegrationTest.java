@@ -129,20 +129,15 @@ class AdminUsersIntegrationTest {
     }
 
     @Test
-    void theEmailCanBeChangedAndTheAdminDeleted() throws Exception {
-        SecurityUser luisa = saveAdmin("luisa-edits@test.com");
-        saveAdmin("old-email@test.com");
-        Long id = idOf("old-email@test.com");
-
-        confirmed(put("/api/admin/users/" + id + "/email").contentType(MediaType.APPLICATION_JSON)
-                .content("{ \"email\": \"new-email@test.com\" }"), luisa)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("new-email@test.com"));
-        login("new-email@test.com", "Correct2026").andExpect(status().isOk());
+    void anotherAdminCanBeDeleted() throws Exception {
+        SecurityUser luisa = saveAdmin("luisa-deletes@test.com");
+        saveAdmin("to-delete@test.com");
+        Long id = idOf("to-delete@test.com");
+        login("to-delete@test.com", "Correct2026").andExpect(status().isOk());
 
         confirmed(delete("/api/admin/users/" + id), luisa).andExpect(status().isNoContent());
         assertThat(userRepository.findById(id)).isEmpty();
-        login("new-email@test.com", "Correct2026").andExpect(status().isUnauthorized());
+        login("to-delete@test.com", "Correct2026").andExpect(status().isUnauthorized());
     }
 
     @Test
