@@ -3,6 +3,7 @@ package com.bgsistemas.api.security;
 import com.bgsistemas.api.user.Role;
 import com.bgsistemas.api.user.User;
 import com.bgsistemas.api.user.UserRepository;
+import com.bgsistemas.api.user.UserStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -65,6 +66,16 @@ class PasswordChangedJwtValidatorTest {
     @Test
     void rejectsATokenOfAUserThatNoLongerExists() {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+
+        assertThat(validator.validate(tokenIssuedAt(CHANGED_AT)).hasErrors()).isTrue();
+    }
+
+    // BGSI-277: blocking an admin closes the sessions that are already open
+    @Test
+    void rejectsATokenOfABlockedAdmin() {
+        User blocked = adminWithPasswordChangedAt(null);
+        blocked.setStatus(UserStatus.BLOCKED);
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(blocked));
 
         assertThat(validator.validate(tokenIssuedAt(CHANGED_AT)).hasErrors()).isTrue();
     }

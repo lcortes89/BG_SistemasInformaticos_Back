@@ -30,6 +30,8 @@ public class PasswordResetEmailSender {
     private static final ClassPathResource LOGO = new ClassPathResource("pdf/logo.png");
     static final String SUBJECT = "Crea una nueva contraseña · Panel de BG Sistemas";
     static final String ALERT_SUBJECT = "Aviso de seguridad: intentos de recuperar contraseña · Panel de BG Sistemas";
+    static final String INVITATION_SUBJECT = "Te han invitado al panel de BG Sistemas";
+    static final String NOTICE_SUBJECT = "Cambio en los administradores · Panel de BG Sistemas";
 
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
     private final MailSettingsService mailSettingsService;
@@ -57,6 +59,26 @@ public class PasswordResetEmailSender {
     @Async
     public void sendUnknownEmailAlert(List<String> admins, UnknownEmailAlarm.Alert alert) {
         deliver(admins.toArray(String[]::new), ALERT_SUBJECT, alertText(alert), alertHtml(alert));
+    }
+
+    // BGSI-277: the same page as "create a new password", with a welcome text (invitacion=1)
+    String invitationLink(String token) {
+        return link(token) + "&invitacion=1";
+    }
+
+    @Async
+    public void sendInvitation(String to, String token, String invitedBy) {
+        String link = invitationLink(token);
+        deliver(new String[] {to}, INVITATION_SUBJECT, invitationText(link, invitedBy), invitationHtml(link, invitedBy));
+    }
+
+    // BGSI-277: "X has blocked Y" to every active admin, so a stolen session cannot act in silence
+    @Async
+    public void sendAdminNotice(List<String> to, String message) {
+        if (to.isEmpty()) {
+            return;
+        }
+        deliver(to.toArray(String[]::new), NOTICE_SUBJECT, noticeText(message), noticeHtml(message));
     }
 
     private void deliver(String[] to, String subject, String text, String html) {
@@ -114,6 +136,44 @@ public class PasswordResetEmailSender {
                 <ul style="margin:0 0 16px;padding-left:20px;font-size:14px;line-height:1.5;">%s</ul>
                 <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">Puede ser alguien que se ha equivocado de correo o un intento de ataque. Nadie ha podido entrar: a esos emails no se les ha enviado ningún enlace.<br>Si se repite a menudo, avisa al responsable técnico.</p>
                 """.formatted(alert.attempts(), emails));
+    }
+
+    static String invitationText(String link, String invitedBy) {
+        return """
+                %s te ha invitado a ser administrador del panel de BG Sistemas.
+
+                Crea tu contraseña con este enlace (válido 24 horas y de un solo uso):
+                %s
+
+                Si no esperabas esta invitación, ignora este correo.
+                """.formatted(invitedBy, link);
+    }
+
+    static String invitationHtml(String link, String invitedBy) {
+        return frame("""
+                <h1 style="margin:0 0 12px;font-size:19px;color:#0b1f3a;">Te han invitado al panel</h1>
+                <p style="margin:0 0 16px;font-size:14px;line-height:1.5;"><strong>%s</strong> te ha invitado a ser administrador del panel de BG Sistemas. Pulsa el botón para crear tu contraseña.</p>
+                <p style="margin:0 0 16px;">
+                  <a href="%s" style="display:inline-block;padding:10px 16px;background:#f28c28;color:#ffffff;border-radius:6px;font-weight:bold;text-decoration:none;">Crear mi contraseña</a>
+                </p>
+                <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">El enlace es válido <strong>24 horas</strong> y solo se puede usar una vez.<br>Si no esperabas esta invitación, ignora este correo.</p>
+                """.formatted(HtmlUtils.htmlEscape(invitedBy, "UTF-8"), link));
+    }
+
+    static String noticeText(String message) {
+        return """
+                %s
+
+                Si no reconoces este cambio, entra en el panel, revisa la lista de administradores y cambia tu contraseña.
+                """.formatted(message);
+    }
+
+    static String noticeHtml(String message) {
+        return frame("""
+                <h1 style="margin:0 0 12px;font-size:19px;color:#0b1f3a;">Cambio en los administradores</h1>
+                <p style="margin:0 0 16px;font-size:14px;line-height:1.5;">%s</p>
+                <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">Si no reconoces este cambio, entra en el panel, revisa la lista de administradores y cambia tu contraseña.</p>
+                """.formatted(HtmlUtils.htmlEscape(message, "UTF-8")));
     }
 
     static String html(String link) {
