@@ -4,6 +4,7 @@ import com.bgsistemas.api.auth.dtos.LoginResponseDTO;
 import com.bgsistemas.api.auth.dtos.RegisterRequestDTO;
 import com.bgsistemas.api.auth.dtos.RegisterResponseDTO;
 import com.bgsistemas.api.auth.exceptions.EmailAlreadyExistsException;
+import com.bgsistemas.api.twofactor.PendingLoginService;
 import com.bgsistemas.api.user.Role;
 import com.bgsistemas.api.user.User;
 import com.bgsistemas.api.user.UserRepository;
@@ -17,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +35,9 @@ class AuthServiceImplTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private PendingLoginService pendingLogins;
+
     @InjectMocks
     private AuthServiceImpl authService;
 
@@ -46,6 +51,22 @@ class AuthServiceImplTest {
         assertThat(response.token()).isEqualTo("jwt-token");
         assertThat(response.email()).isEqualTo("admin@mail.com");
         assertThat(response.role()).isEqualTo("ADMIN");
+        assertThat(response.needsSecondStep()).isFalse();
+    }
+
+    // BGSI-276: with 2FA on, no JWT yet: a pending token for the second step
+    @Test
+    void shouldAskForTheCodeWhenTwoFactorIsOn() {
+        User admin = new User("admin@mail.com", "hashed", Role.ADMIN);
+        admin.setTotpEnabled(true);
+        when(pendingLogins.start(eq("admin@mail.com"), any())).thenReturn("pending-token");
+
+        LoginResponseDTO response = authService.login(admin);
+
+        assertThat(response.needsSecondStep()).isTrue();
+        assertThat(response.pendingToken()).isEqualTo("pending-token");
+        assertThat(response.token()).isNull();
+        verify(jwtService, never()).generateToken(any());
     }
 
     @Test

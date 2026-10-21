@@ -50,6 +50,18 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.role").value("ADMIN"));
     }
 
+    // BGSI-276: with 2FA on, 202 and no JWT until the code is right
+    @Test
+    void shouldAskForTheCodeWhenTwoFactorIsOn() throws Exception {
+        when(authService.login(any())).thenReturn(LoginResponseDTO.twoFactorPending("admin@mail.com", "pending-token"));
+
+        mockMvc.perform(post("/api/auth/login").with(user(admin)))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.twoFactorRequired").value(true))
+                .andExpect(jsonPath("$.pendingToken").value("pending-token"))
+                .andExpect(jsonPath("$.token").doesNotExist());
+    }
+
     @Test
     void shouldReturn401OnLoginWithoutCredentials() throws Exception {
         mockMvc.perform(post("/api/auth/login"))

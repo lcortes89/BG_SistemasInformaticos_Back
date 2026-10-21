@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -98,7 +99,7 @@ class AccountControllerTest {
 
     @Test
     void confirmingThePasswordReturnsAFiveMinuteToken() throws Exception {
-        when(passwordConfirmationService.confirm("admin@mail.com", "Correct2026")).thenReturn("confirm-token");
+        when(passwordConfirmationService.confirm("admin@mail.com", "Correct2026", null)).thenReturn("confirm-token");
 
         mockMvc.perform(post(CONFIRM_URL).with(user(admin))
                         .contentType(MediaType.APPLICATION_JSON).content("{ \"password\": \"Correct2026\" }"))
@@ -113,12 +114,12 @@ class AccountControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{ \"password\": \"\" }"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.details.password").value("Password is required"));
-        verify(passwordConfirmationService, never()).confirm(anyString(), anyString());
+        verify(passwordConfirmationService, never()).confirm(anyString(), anyString(), any());
     }
 
     @Test
     void aWrongPasswordWhenConfirmingIsA400OnThePasswordField() throws Exception {
-        when(passwordConfirmationService.confirm("admin@mail.com", "Wrong2026"))
+        when(passwordConfirmationService.confirm("admin@mail.com", "Wrong2026", null))
                 .thenThrow(new InvalidPasswordChangeException("password", "Password is not correct"));
 
         mockMvc.perform(post(CONFIRM_URL).with(user(admin))
@@ -129,7 +130,7 @@ class AccountControllerTest {
 
     @Test
     void tooManyWrongPasswordsWhenConfirmingIsA429() throws Exception {
-        when(passwordConfirmationService.confirm("admin@mail.com", "Wrong2026"))
+        when(passwordConfirmationService.confirm("admin@mail.com", "Wrong2026", null))
                 .thenThrow(new TooManyAttemptsException(Duration.ofMinutes(15)));
 
         mockMvc.perform(post(CONFIRM_URL).with(user(admin))

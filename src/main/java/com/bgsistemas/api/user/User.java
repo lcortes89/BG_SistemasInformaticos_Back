@@ -33,6 +33,13 @@ public class User {
     // BGSI-272: tokens issued before this moment are no longer valid (null = never changed)
     private Instant passwordChangedAt;
 
+    // BGSI-276: two-factor authentication. The secret is encrypted (SecretCipher); null = never set up.
+    // Wrapper types so the columns can be added to the existing table (old rows get null = off)
+    private String totpSecret;
+    private Boolean totpEnabled;
+    // Last 30-second step used: the same code cannot be used twice
+    private Long totpLastStep;
+
     public User() {
     }
 
@@ -51,4 +58,10 @@ public class User {
     public void setRole(Role role) { this.role = role; }
     public Instant getPasswordChangedAt() { return passwordChangedAt; }
     public void setPasswordChangedAt(Instant passwordChangedAt) { this.passwordChangedAt = passwordChangedAt; }
+    public String getTotpSecret() { return totpSecret; }
+    public void setTotpSecret(String totpSecret) { this.totpSecret = totpSecret; }
+    public boolean isTotpEnabled() { return Boolean.TRUE.equals(totpEnabled); }
+    public void setTotpEnabled(boolean totpEnabled) { this.totpEnabled = totpEnabled; }
+    public Long getTotpLastStep() { return totpLastStep; }
+    public void setTotpLastStep(Long totpLastStep) { this.totpLastStep = totpLastStep; }
 }

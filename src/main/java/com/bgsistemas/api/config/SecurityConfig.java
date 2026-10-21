@@ -61,6 +61,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/rates/calculate").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/rates/steps").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password", "/api/auth/reset-password").permitAll() // BGSI-273
+                        // BGSI-276: second step of the login (the pending token says who is logging in)
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login/2fa").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
