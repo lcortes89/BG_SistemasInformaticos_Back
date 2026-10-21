@@ -4,6 +4,7 @@ import com.bgsistemas.api.passwordreset.exceptions.InvalidResetTokenException;
 import com.bgsistemas.api.user.Role;
 import com.bgsistemas.api.user.User;
 import com.bgsistemas.api.user.UserRepository;
+import com.bgsistemas.api.user.UserStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +29,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     static final Duration LINK_VALIDITY = Duration.ofMinutes(30);
     static final Duration REQUEST_WINDOW = Duration.ofMinutes(15);
     static final int MAX_REQUESTS_PER_WINDOW = 3;
+    static final Duration INVITATION_VALIDITY = Duration.ofHours(24);
 
     private static final Logger log = LoggerFactory.getLogger(PasswordResetServiceImpl.class);
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -61,6 +63,9 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             return;
         }
         User user = found.get();
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            return; // BGSI-277: a blocked admin cannot get back in by changing the password (same answer)
+        }
 
         if (tokenRepository.countByUserAndCreatedAtAfter(user, now.minus(REQUEST_WINDOW)) >= MAX_REQUESTS_PER_WINDOW) {
             return; // too many emails in a short time: we stop sending (no error, same answer)
@@ -80,7 +85,14 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 .orElseThrow(InvalidResetTokenException::new);
 
         User user = resetToken.getUser();
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            throw new InvalidResetTokenException();
+        }
         user.setPassword(passwordEncoder.encode(newPassword));
+        // BGSI-277: an invited admin who chooses the password becomes active
+        if (user.getStatus() == UserStatus.PENDING) {
+            user.setStatus(UserStatus.ACTIVE);
+        }
         // Like in "Mi cuenta" (BGSI-272): every session opened before now stops working
         user.setPasswordChangedAt(now.truncatedTo(ChronoUnit.SECONDS));
         userRepository.save(user);
@@ -88,6 +100,17 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         // This link and any other link still pending for this user can no longer be used
         tokenRepository.findByUserAndUsedAtIsNull(user).forEach(pending -> pending.markUsed(now));
         resetToken.markUsed(now);
+    }
+
+    // BGSI-277: the invitation is a "create your password" link valid 24 hours (older links stop working)
+    @Override
+    @Transactional
+    public void invite(User user, String invitedBy) {
+        Instant now = Instant.now();
+        tokenRepository.findByUserAndUsedAtIsNull(user).forEach(pending -> pending.markUsed(now));
+        String token = newToken();
+        tokenRepository.save(new PasswordResetToken(user, hash(token), now, now.plus(INVITATION_VALIDITY)));
+        emailSender.sendInvitation(user.getEmail(), token, invitedBy); // @Async
     }
 
     private void alertAdmins(UnknownEmailAlarm.Alert alert) {

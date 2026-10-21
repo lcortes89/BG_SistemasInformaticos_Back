@@ -40,6 +40,11 @@ public class User {
     // Last 30-second step used: the same code cannot be used twice
     private Long totpLastStep;
 
+    // BGSI-277: null = ACTIVE (the admins created before this column existed)
+    @Enumerated(EnumType.STRING)
+    private UserStatus status;
+    private Instant lastLoginAt;
+
     public User() {
     }
 
@@ -64,4 +69,9 @@ public class User {
     public void setTotpEnabled(boolean totpEnabled) { this.totpEnabled = totpEnabled; }
     public Long getTotpLastStep() { return totpLastStep; }
     public void setTotpLastStep(Long totpLastStep) { this.totpLastStep = totpLastStep; }
+    public UserStatus getStatus() { return status == null ? UserStatus.ACTIVE : status; }
+    public void setStatus(UserStatus status) { this.status = status; }
+    public boolean isActive() { return getStatus() == UserStatus.ACTIVE; }
+    public Instant getLastLoginAt() { return lastLoginAt; }
+    public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
 }

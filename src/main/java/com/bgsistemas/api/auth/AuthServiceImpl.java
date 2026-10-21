@@ -36,6 +36,9 @@ public class AuthServiceImpl implements AuthService {
         if (user.isTotpEnabled()) {
             return LoginResponseDTO.twoFactorPending(user.getEmail(), pendingLogins.start(user.getEmail(), Instant.now()));
         }
+        // BGSI-277: shown in the list of administrators
+        user.setLastLoginAt(Instant.now());
+        userRepository.save(user);
         String token = jwtService.generateToken(user);
         return new LoginResponseDTO(token, user.getEmail(), user.getRole().name());
     }

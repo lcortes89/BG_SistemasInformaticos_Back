@@ -52,6 +52,8 @@ public class TwoFactorLoginService {
 
         loginAttempts.onSuccess(email);
         pendingLogins.finish(pendingToken);
+        user.setLastLoginAt(now); // BGSI-277
+        userRepository.save(user);
         return new LoginResponseDTO(jwtService.generateToken(user), user.getEmail(), user.getRole().name());
     }
 }

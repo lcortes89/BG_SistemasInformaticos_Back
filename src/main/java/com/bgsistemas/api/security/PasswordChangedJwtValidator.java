@@ -28,6 +28,10 @@ public class PasswordChangedJwtValidator implements OAuth2TokenValidator<Jwt> {
         if (user.isEmpty()) {
             return invalid("The user of this token no longer exists");
         }
+        // BGSI-277: blocking an admin also closes the sessions that are already open
+        if (!user.get().isActive()) {
+            return invalid("This account is blocked");
+        }
 
         Instant changedAt = user.get().getPasswordChangedAt();
         Instant issuedAt = jwt.getIssuedAt();

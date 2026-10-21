@@ -4,6 +4,7 @@ import com.bgsistemas.api.passwordreset.exceptions.InvalidResetTokenException;
 import com.bgsistemas.api.user.Role;
 import com.bgsistemas.api.user.User;
 import com.bgsistemas.api.user.UserRepository;
+import com.bgsistemas.api.user.UserStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -178,5 +179,50 @@ class PasswordResetServiceImplTest {
         assertThatThrownBy(() -> service.resetPassword("raw-token", "NewPass2026"))
                 .isInstanceOf(InvalidResetTokenException.class);
         verify(passwordEncoder, never()).encode(anyString());
+    }
+
+    // ---------- BGSI-277: invitations and blocked admins ----------
+
+    @Test
+    void anInvitationIsALinkOf24HoursThatCancelsTheOldOnes() {
+        PasswordResetToken old = tokenFor("old-token", Instant.now().plusSeconds(600));
+        when(tokenRepository.findByUserAndUsedAtIsNull(admin)).thenReturn(List.of(old));
+
+        service.invite(admin, "luisa@mail.com");
+
+        ArgumentCaptor<String> sentToken = ArgumentCaptor.forClass(String.class);
+        verify(emailSender).sendInvitation(eq(EMAIL), sentToken.capture(), eq("luisa@mail.com"));
+        ArgumentCaptor<PasswordResetToken> saved = ArgumentCaptor.forClass(PasswordResetToken.class);
+        verify(tokenRepository).save(saved.capture());
+        assertThat(saved.getValue().getTokenHash()).isEqualTo(PasswordResetServiceImpl.hash(sentToken.getValue()));
+        assertThat(Duration.between(saved.getValue().getCreatedAt(), saved.getValue().getExpiresAt())).isEqualTo(Duration.ofHours(24));
+        assertThat(old.getUsedAt()).isNotNull();
+    }
+
+    @Test
+    void anInvitedAdminWhoChoosesThePasswordBecomesActive() {
+        admin.setStatus(UserStatus.PENDING);
+        PasswordResetToken token = tokenFor("raw-token", Instant.now().plusSeconds(600));
+        when(tokenRepository.findByTokenHash(PasswordResetServiceImpl.hash("raw-token"))).thenReturn(Optional.of(token));
+        when(tokenRepository.findByUserAndUsedAtIsNull(admin)).thenReturn(List.of(token));
+        when(passwordEncoder.encode("NewPass2026")).thenReturn("new-hash");
+
+        service.resetPassword("raw-token", "NewPass2026");
+
+        assertThat(admin.getStatus()).isEqualTo(UserStatus.ACTIVE);
+    }
+
+    @Test
+    void aBlockedAdminGetsNoLinkAndCannotUseAnOldOne() {
+        admin.setStatus(UserStatus.BLOCKED);
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(admin));
+
+        service.requestReset(EMAIL);
+        verify(emailSender, never()).send(anyString(), anyString());
+
+        PasswordResetToken token = tokenFor("raw-token", Instant.now().plusSeconds(600));
+        when(tokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
+        assertThatThrownBy(() -> service.resetPassword("raw-token", "NewPass2026"))
+                .isInstanceOf(InvalidResetTokenException.class);
     }
 }

@@ -2,6 +2,7 @@ package com.bgsistemas.api.passwordreset;
 
 import com.bgsistemas.api.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,4 +17,8 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
 
     // Links still not used: they are cancelled when the password changes
     List<PasswordResetToken> findByUserAndUsedAtIsNull(User user);
+
+    // BGSI-277: before deleting an admin
+    @Transactional
+    void deleteByUser(User user);
 }

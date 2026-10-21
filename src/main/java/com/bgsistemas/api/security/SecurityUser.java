@@ -31,6 +31,12 @@ public class SecurityUser implements UserDetails {
         return user.getPassword();
     }
 
+    // BGSI-277: a blocked or still invited admin cannot log in (Spring Security answers 401)
+    @Override
+    public boolean isEnabled() {
+        return user.isActive();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
