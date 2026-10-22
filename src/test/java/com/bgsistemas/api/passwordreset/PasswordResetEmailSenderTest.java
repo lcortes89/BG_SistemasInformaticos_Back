@@ -121,4 +121,39 @@ class PasswordResetEmailSenderTest {
 
         verify(mailSender, never()).send(any(MimeMessage.class));
     }
+
+    // ---------- BGSI-299: change my email ----------
+
+    @Test
+    void sendsTheConfirmationLinkToTheNewEmail() throws Exception {
+        when(mailSenderProvider.getIfAvailable()).thenReturn(mailSender);
+        when(mailSettingsService.getSettings()).thenReturn(settings);
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+
+        sender().sendEmailChangeLink("new@mail.com", "abc123", "old@mail.com");
+
+        ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender).send(sent.capture());
+        assertThat(sent.getValue().getRecipients(Message.RecipientType.TO)[0].toString()).isEqualTo("new@mail.com");
+        assertThat(sent.getValue().getSubject()).isEqualTo(PasswordResetEmailSender.EMAIL_CHANGE_SUBJECT);
+        assertThat(sender().emailChangeLink("abc123")).isEqualTo("http://localhost:5173/admin/confirmar-email?token=abc123");
+        assertThat(PasswordResetEmailSender.emailChangeText("LINK", "old@mail.com")).contains("old@mail.com").contains("1 hora").contains("LINK");
+        assertThat(PasswordResetEmailSender.emailChangeHtml("LINK", "<b>old</b>")).contains("&lt;b&gt;old&lt;/b&gt;").contains("href=\"LINK\"");
+    }
+
+    @Test
+    void warnsTheOldEmail() throws Exception {
+        when(mailSenderProvider.getIfAvailable()).thenReturn(mailSender);
+        when(mailSettingsService.getSettings()).thenReturn(settings);
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+
+        sender().sendEmailChangeRequested("old@mail.com", "new@mail.com");
+
+        ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender).send(sent.capture());
+        assertThat(sent.getValue().getRecipients(Message.RecipientType.TO)[0].toString()).isEqualTo("old@mail.com");
+        assertThat(sent.getValue().getSubject()).isEqualTo(PasswordResetEmailSender.EMAIL_CHANGE_REQUESTED_SUBJECT);
+        assertThat(PasswordResetEmailSender.emailChangeRequestedText("new@mail.com")).contains("new@mail.com").contains("cancela el cambio");
+        assertThat(PasswordResetEmailSender.emailChangeRequestedHtml("<i>x</i>")).contains("&lt;i&gt;x&lt;/i&gt;").doesNotContain("href=");
+    }
 }

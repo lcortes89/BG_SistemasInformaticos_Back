@@ -32,10 +32,16 @@ public class PasswordResetEmailSender {
     static final String ALERT_SUBJECT = "Aviso de seguridad: intentos de recuperar contraseña · Panel de BG Sistemas";
     static final String INVITATION_SUBJECT = "Te han invitado al panel de BG Sistemas";
     static final String NOTICE_SUBJECT = "Cambio en los administradores · Panel de BG Sistemas";
+    static final String EMAIL_CHANGE_SUBJECT = "Confirma tu nuevo email · Panel de BG Sistemas";
+    static final String EMAIL_CHANGE_REQUESTED_SUBJECT = "Aviso de seguridad: cambio de email · Panel de BG Sistemas";
 
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
     private final MailSettingsService mailSettingsService;
     private final String resetUrl;
+
+    // BGSI-299: page of the front that opens the "confirm your new email" link
+    @Value("${app.email-change.url:http://localhost:5173/admin/confirmar-email}")
+    private String emailChangeUrl = "http://localhost:5173/admin/confirmar-email";
 
     public PasswordResetEmailSender(ObjectProvider<JavaMailSender> mailSenderProvider,
                                     MailSettingsService mailSettingsService,
@@ -79,6 +85,24 @@ public class PasswordResetEmailSender {
             return;
         }
         deliver(to.toArray(String[]::new), NOTICE_SUBJECT, noticeText(message), noticeHtml(message));
+    }
+
+    // BGSI-299: the link goes to the NEW address, so it is proved that the admin owns it
+    String emailChangeLink(String token) {
+        return emailChangeUrl + "?token=" + token;
+    }
+
+    @Async
+    public void sendEmailChangeLink(String to, String token, String oldEmail) {
+        String link = emailChangeLink(token);
+        deliver(new String[] {to}, EMAIL_CHANGE_SUBJECT, emailChangeText(link, oldEmail), emailChangeHtml(link, oldEmail));
+    }
+
+    // BGSI-299: notice to the OLD address, in case somebody else is using the session
+    @Async
+    public void sendEmailChangeRequested(String oldEmail, String newEmail) {
+        deliver(new String[] {oldEmail}, EMAIL_CHANGE_REQUESTED_SUBJECT,
+                emailChangeRequestedText(newEmail), emailChangeRequestedHtml(newEmail));
     }
 
     private void deliver(String[] to, String subject, String text, String html) {
@@ -174,6 +198,46 @@ public class PasswordResetEmailSender {
                 <p style="margin:0 0 16px;font-size:14px;line-height:1.5;">%s</p>
                 <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">Si no reconoces este cambio, entra en el panel, revisa la lista de administradores y cambia tu contraseña.</p>
                 """.formatted(HtmlUtils.htmlEscape(message, "UTF-8")));
+    }
+
+    static String emailChangeText(String link, String oldEmail) {
+        return """
+                Has pedido cambiar el email de tu cuenta del panel de BG Sistemas (ahora es %s) por esta dirección.
+
+                Confírmalo con este enlace (válido 1 hora y de un solo uso):
+                %s
+
+                Al confirmarlo se cerrarán tus sesiones abiertas y tendrás que entrar con este email.
+                Si no lo has pedido tú, ignora este correo: tu email no cambia.
+                """.formatted(oldEmail, link);
+    }
+
+    static String emailChangeHtml(String link, String oldEmail) {
+        return frame("""
+                <h1 style="margin:0 0 12px;font-size:19px;color:#0b1f3a;">Confirma tu nuevo email</h1>
+                <p style="margin:0 0 16px;font-size:14px;line-height:1.5;">Has pedido cambiar el email de tu cuenta del panel (ahora es <strong>%s</strong>) por esta dirección. Pulsa el botón para confirmarlo.</p>
+                <p style="margin:0 0 16px;">
+                  <a href="%s" style="display:inline-block;padding:10px 16px;background:#f28c28;color:#ffffff;border-radius:6px;font-weight:bold;text-decoration:none;">Confirmar mi nuevo email</a>
+                </p>
+                <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">El enlace es válido <strong>1 hora</strong> y solo se puede usar una vez. Al confirmarlo se cerrarán tus sesiones abiertas.<br>Si no lo has pedido tú, ignora este correo: tu email no cambia.</p>
+                """.formatted(HtmlUtils.htmlEscape(oldEmail, "UTF-8"), link));
+    }
+
+    static String emailChangeRequestedText(String newEmail) {
+        return """
+                Alguien ha pedido cambiar el email de tu cuenta del panel de BG Sistemas por %s.
+
+                El cambio solo se hará si se confirma desde esa dirección.
+                Si no has sido tú, entra en el panel, cancela el cambio en "Mi cuenta" y cambia tu contraseña.
+                """.formatted(newEmail);
+    }
+
+    static String emailChangeRequestedHtml(String newEmail) {
+        return frame("""
+                <h1 style="margin:0 0 12px;font-size:19px;color:#0b1f3a;">Aviso de seguridad</h1>
+                <p style="margin:0 0 16px;font-size:14px;line-height:1.5;">Alguien ha pedido cambiar el email de tu cuenta del panel por <strong>%s</strong>. El cambio solo se hará si se confirma desde esa dirección.</p>
+                <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">Si no has sido tú, entra en el panel, cancela el cambio en "Mi cuenta" y cambia tu contraseña.</p>
+                """.formatted(HtmlUtils.htmlEscape(newEmail, "UTF-8")));
     }
 
     static String html(String link) {

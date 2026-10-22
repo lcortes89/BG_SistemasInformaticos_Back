@@ -122,14 +122,14 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         }
     }
 
-    // 32 random bytes -> 43 characters that are safe in a URL
-    static String newToken() {
+    // 32 random bytes -> 43 characters that are safe in a URL. Also used by the email change links (BGSI-299)
+    public static String newToken() {
         byte[] bytes = new byte[32];
         RANDOM.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    static String hash(String token) {
+    public static String hash(String token) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest);

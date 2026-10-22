@@ -2,6 +2,7 @@ package com.bgsistemas.api.adminuser;
 
 import com.bgsistemas.api.adminuser.dtos.AdminUserDTO;
 import com.bgsistemas.api.auth.exceptions.EmailAlreadyExistsException;
+import com.bgsistemas.api.emailchange.EmailChangeTokenRepository;
 import com.bgsistemas.api.globals.ResourceConflictException;
 import com.bgsistemas.api.passwordreset.PasswordResetEmailSender;
 import com.bgsistemas.api.passwordreset.PasswordResetService;
@@ -41,8 +42,10 @@ class AdminUserServiceTest {
     private final TwoFactorService twoFactorService = mock(TwoFactorService.class);
     private final PasswordResetEmailSender emailSender = mock(PasswordResetEmailSender.class);
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
+    private final EmailChangeTokenRepository emailChangeTokenRepository = mock(EmailChangeTokenRepository.class);
     private final AdminUserService service = new AdminUserService(userRepository, passwordResetService,
-            resetTokenRepository, recoveryCodeRepository, twoFactorService, emailSender, passwordEncoder);
+            resetTokenRepository, recoveryCodeRepository, twoFactorService, emailSender, passwordEncoder,
+            emailChangeTokenRepository);
 
     private final User me = admin(1L, "luisa@bg.es");
     private final User other = admin(2L, "maria@bg.es");
@@ -148,6 +151,7 @@ class AdminUserServiceTest {
 
         verify(recoveryCodeRepository).deleteByUser(other);
         verify(resetTokenRepository).deleteByUser(other);
+        verify(emailChangeTokenRepository).deleteByUser(other);
         verify(userRepository).delete(other);
         verify(emailSender).sendAdminNotice(any(), eq("luisa@bg.es ha borrado la cuenta de administrador maria@bg.es."));
     }
