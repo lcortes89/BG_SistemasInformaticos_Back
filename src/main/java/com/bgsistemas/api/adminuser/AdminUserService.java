@@ -2,6 +2,7 @@ package com.bgsistemas.api.adminuser;
 
 import com.bgsistemas.api.adminuser.dtos.AdminUserDTO;
 import com.bgsistemas.api.auth.exceptions.EmailAlreadyExistsException;
+import com.bgsistemas.api.emailchange.EmailChangeTokenRepository;
 import com.bgsistemas.api.globals.ResourceConflictException;
 import com.bgsistemas.api.globals.ResourceNotFoundException;
 import com.bgsistemas.api.passwordreset.PasswordResetEmailSender;
@@ -39,11 +40,12 @@ public class AdminUserService {
     private final TwoFactorService twoFactorService;
     private final PasswordResetEmailSender emailSender;
     private final PasswordEncoder passwordEncoder;
+    private final EmailChangeTokenRepository emailChangeTokenRepository;
 
     public AdminUserService(UserRepository userRepository, PasswordResetService passwordResetService,
                             PasswordResetTokenRepository resetTokenRepository, RecoveryCodeRepository recoveryCodeRepository,
                             TwoFactorService twoFactorService, PasswordResetEmailSender emailSender,
-                            PasswordEncoder passwordEncoder) {
+                            PasswordEncoder passwordEncoder, EmailChangeTokenRepository emailChangeTokenRepository) {
         this.userRepository = userRepository;
         this.passwordResetService = passwordResetService;
         this.resetTokenRepository = resetTokenRepository;
@@ -51,6 +53,7 @@ public class AdminUserService {
         this.twoFactorService = twoFactorService;
         this.emailSender = emailSender;
         this.passwordEncoder = passwordEncoder;
+        this.emailChangeTokenRepository = emailChangeTokenRepository;
     }
 
     public List<AdminUserDTO> list(String currentEmail) {
@@ -122,6 +125,7 @@ public class AdminUserService {
         User user = other(id, currentEmail);
         recoveryCodeRepository.deleteByUser(user);
         resetTokenRepository.deleteByUser(user);
+        emailChangeTokenRepository.deleteByUser(user); // BGSI-299
         userRepository.delete(user);
         notifyAdmins(currentEmail + " ha borrado la cuenta de administrador " + user.getEmail() + ".");
     }
