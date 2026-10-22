@@ -55,4 +55,11 @@ public class ContactServiceImpl implements ContactService {
         }
         return contactRepository.save(contact);
     }
+
+    @Override
+    public void deleteContact(Long id) {
+        Contact contact = contactRepository.findById(id)
+                .orElseThrow(() -> new ContactNotFoundException(id));
+        contactRepository.delete(contact);
+    }
 }

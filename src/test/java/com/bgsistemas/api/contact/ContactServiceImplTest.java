@@ -129,4 +129,27 @@ class ContactServiceImplTest {
 
         verify(contactRepository, never()).findById(any());
     }
+
+    // ---------- BGSI-307: delete ----------
+
+    @Test
+    void shouldDeleteContact() {
+        Contact contact = sampleContact();
+        when(contactRepository.findById(1L)).thenReturn(Optional.of(contact));
+
+        contactService.deleteContact(1L);
+
+        verify(contactRepository).delete(contact);
+    }
+
+    @Test
+    void shouldThrowWhenDeletingAContactThatDoesNotExist() {
+        when(contactRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> contactService.deleteContact(99L))
+                .isInstanceOf(ContactNotFoundException.class)
+                .hasMessageContaining("99");
+
+        verify(contactRepository, never()).delete(any());
+    }
 }
