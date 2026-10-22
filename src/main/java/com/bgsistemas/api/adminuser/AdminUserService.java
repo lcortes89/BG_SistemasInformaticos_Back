@@ -18,17 +18,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Stream;
 
 // BGSI-277: "Administradores". Nobody can act on their own account here (that is "Mi cuenta"),
 // so there is always at least one active admin: the one doing the action.
-// Every change is emailed to all the active admins
+// Every change is emailed to all the active admins.
+// Nobody changes the email of another admin: each admin changes their own one in "Mi cuenta"
 @Service
 public class AdminUserService {
 
@@ -119,26 +117,6 @@ public class AdminUserService {
         return toDTO(userRepository.findById(id).orElseThrow(), currentEmail);
     }
 
-    // The sessions of that admin are closed; the old and the new address are told too
-    @Transactional
-    public AdminUserDTO changeEmail(Long id, String newEmail, String currentEmail) {
-        User user = other(id, currentEmail);
-        String clean = normalize(newEmail);
-        String oldEmail = user.getEmail();
-        if (clean.equals(oldEmail)) {
-            return toDTO(user, currentEmail);
-        }
-        if (userRepository.existsByEmail(clean)) {
-            throw new EmailAlreadyExistsException(clean);
-        }
-        user.setEmail(clean);
-        user.setPasswordChangedAt(Instant.now().truncatedTo(ChronoUnit.SECONDS));
-        userRepository.save(user);
-        String message = currentEmail + " ha cambiado el email de un administrador: " + oldEmail + " ahora es " + clean + ".";
-        notifyAdmins(message, oldEmail, clean);
-        return toDTO(user, currentEmail);
-    }
-
     @Transactional
     public void delete(Long id, String currentEmail) {
         User user = other(id, currentEmail);
@@ -158,11 +136,10 @@ public class AdminUserService {
         return user;
     }
 
-    private void notifyAdmins(String message, String... alsoTo) {
-        List<String> to = Stream.concat(
-                        userRepository.findByRole(Role.ADMIN).stream().filter(User::isActive).map(User::getEmail),
-                        Stream.of(alsoTo))
-                .distinct()
+    private void notifyAdmins(String message) {
+        List<String> to = userRepository.findByRole(Role.ADMIN).stream()
+                .filter(User::isActive)
+                .map(User::getEmail)
                 .toList();
         emailSender.sendAdminNotice(to, message); // @Async: the answer does not wait for Gmail
     }

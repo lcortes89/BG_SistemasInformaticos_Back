@@ -61,13 +61,6 @@ public class AdminUserController {
     }
 
     @RequiresConfirmation
-    @PutMapping("/{id}/email")
-    public AdminUserDTO changeEmail(@PathVariable Long id, @Valid @RequestBody AdminEmailRequestDTO request,
-                                    Authentication authentication) {
-        return adminUserService.changeEmail(id, request.email(), authentication.getName());
-    }
-
-    @RequiresConfirmation
     @DeleteMapping("/{id}/2fa")
     public AdminUserDTO resetTwoFactor(@PathVariable Long id, Authentication authentication) {
         return adminUserService.resetTwoFactor(id, authentication.getName());

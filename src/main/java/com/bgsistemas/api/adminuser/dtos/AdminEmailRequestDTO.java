@@ -3,7 +3,7 @@ package com.bgsistemas.api.adminuser.dtos;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-// BGSI-277: body of "invite" and "change email"
+// BGSI-277: body of "invite"
 public record AdminEmailRequestDTO(
 
         @NotBlank(message = "Email is required")

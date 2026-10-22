@@ -83,16 +83,13 @@ class AdminUserControllerTest {
     }
 
     @Test
-    void blocksUnblocksChangesTheEmailResetsTwoFactorAndDeletes() throws Exception {
+    void blocksUnblocksResetsTwoFactorAndDeletes() throws Exception {
         when(adminUserService.block(2L, "luisa@bg.es")).thenReturn(maria);
         when(adminUserService.unblock(2L, "luisa@bg.es")).thenReturn(maria);
-        when(adminUserService.changeEmail(2L, "maria2@bg.es", "luisa@bg.es")).thenReturn(maria);
         when(adminUserService.resetTwoFactor(2L, "luisa@bg.es")).thenReturn(maria);
 
         mockMvc.perform(put("/api/admin/users/2/block").with(user(admin))).andExpect(status().isOk());
         mockMvc.perform(put("/api/admin/users/2/unblock").with(user(admin))).andExpect(status().isOk());
-        mockMvc.perform(put("/api/admin/users/2/email").with(user(admin))
-                .contentType(MediaType.APPLICATION_JSON).content("{ \"email\": \"maria2@bg.es\" }")).andExpect(status().isOk());
         mockMvc.perform(delete("/api/admin/users/2/2fa").with(user(admin))).andExpect(status().isOk());
         mockMvc.perform(post("/api/admin/users/2/invitation").with(user(admin))).andExpect(status().isNoContent());
         mockMvc.perform(delete("/api/admin/users/2").with(user(admin))).andExpect(status().isNoContent());
