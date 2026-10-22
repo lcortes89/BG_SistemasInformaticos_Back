@@ -67,6 +67,7 @@ class ConfirmPasswordIntegrationTest {
                 Arguments.of("delete brand", delete("/api/admin/brands/999")),
                 Arguments.of("delete product", delete("/api/admin/services/999")),
                 Arguments.of("delete client", delete("/api/admin/clients/999")),
+                Arguments.of("delete contact", delete("/api/admin/contacts/999")),
                 Arguments.of("delete rate question", delete("/api/admin/rate-questions/999")),
                 Arguments.of("delete rate option", delete("/api/admin/rate-questions/options/999")),
                 Arguments.of("change the contact email", put("/api/admin/settings/mail")

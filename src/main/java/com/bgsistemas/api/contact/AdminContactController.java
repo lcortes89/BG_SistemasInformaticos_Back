@@ -4,9 +4,12 @@ import com.bgsistemas.api.contact.dtos.ContactResponseDTO;
 import com.bgsistemas.api.contact.dtos.ContactUpdateRequestDTO;
 import com.bgsistemas.api.contact.mappers.ContactMapper;
 import com.bgsistemas.api.globals.PageResponseDTO;
+import com.bgsistemas.api.security.RequiresConfirmation;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,5 +50,13 @@ public class AdminContactController {
                                             @Valid @RequestBody ContactUpdateRequestDTO request) {
         Contact updated = contactService.updateContact(id, request.status(), request.note());
         return contactMapper.toResponse(updated);
+    }
+
+    // DELETE /api/admin/contacts/{id} -> 204 No Content (404 if it does not exist). Needs the password (BGSI-275)
+    @RequiresConfirmation
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteContact(@PathVariable Long id) {
+        contactService.deleteContact(id);
+        return ResponseEntity.noContent().build();
     }
 }

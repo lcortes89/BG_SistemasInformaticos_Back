@@ -12,4 +12,7 @@ public interface ContactService {
 
     // Changes the status and/or the note (null = do not change it)
     Contact updateContact(Long id, ContactStatus status, String note);
+
+    // BGSI-307: spam, tests or a person who asks to be forgotten (GDPR)
+    void deleteContact(Long id);
 }
