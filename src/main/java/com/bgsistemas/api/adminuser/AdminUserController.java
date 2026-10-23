@@ -2,8 +2,11 @@ package com.bgsistemas.api.adminuser;
 
 import com.bgsistemas.api.adminuser.dtos.AdminEmailRequestDTO;
 import com.bgsistemas.api.adminuser.dtos.AdminUserDTO;
+import com.bgsistemas.api.globals.PageResponseDTO;
 import com.bgsistemas.api.security.RequiresConfirmation;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -14,14 +17,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 // BGSI-277: "Administradores" (/api/admin/** -> only ADMIN). The changes need the password (BGSI-275)
 @RestController
 @RequestMapping("/api/admin/users")
 public class AdminUserController {
+
+    private static final int MAX_PAGE_SIZE = 50;
 
     private final AdminUserService adminUserService;
 
@@ -29,9 +33,13 @@ public class AdminUserController {
         this.adminUserService = adminUserService;
     }
 
+    // GET /api/admin/users?page=0&size=5 -> one page of admins, by email (BGSI-315)
     @GetMapping
-    public List<AdminUserDTO> list(Authentication authentication) {
-        return adminUserService.list(authentication.getName());
+    public PageResponseDTO<AdminUserDTO> list(@RequestParam(defaultValue = "0") int page,
+                                              @RequestParam(defaultValue = "5") int size,
+                                              Authentication authentication) {
+        PageRequest pageRequest = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE), Sort.by("email"));
+        return PageResponseDTO.from(adminUserService.list(authentication.getName(), pageRequest));
     }
 
     // POST /invitations { email } -> 201 (409 if the email already exists)

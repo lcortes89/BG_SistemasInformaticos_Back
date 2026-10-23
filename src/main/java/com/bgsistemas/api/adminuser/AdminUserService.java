@@ -14,13 +14,14 @@ import com.bgsistemas.api.user.Role;
 import com.bgsistemas.api.user.User;
 import com.bgsistemas.api.user.UserRepository;
 import com.bgsistemas.api.user.UserStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -56,11 +57,9 @@ public class AdminUserService {
         this.emailChangeTokenRepository = emailChangeTokenRepository;
     }
 
-    public List<AdminUserDTO> list(String currentEmail) {
-        return userRepository.findByRole(Role.ADMIN).stream()
-                .sorted(Comparator.comparing(User::getEmail))
-                .map(user -> toDTO(user, currentEmail))
-                .toList();
+    // BGSI-315: one page of admins (the order comes in the pageable)
+    public Page<AdminUserDTO> list(String currentEmail, Pageable pageable) {
+        return userRepository.findByRole(Role.ADMIN, pageable).map(user -> toDTO(user, currentEmail));
     }
 
     // Creates the admin as PENDING with a random password nobody knows and emails the invitation

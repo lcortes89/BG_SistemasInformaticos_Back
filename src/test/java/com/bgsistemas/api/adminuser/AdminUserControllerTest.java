@@ -11,6 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -18,6 +22,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -43,15 +50,40 @@ class AdminUserControllerTest {
     private final AdminUserDTO maria = new AdminUserDTO(2L, "maria@bg.es", "ACTIVE", true, Instant.parse("2026-10-21T10:00:00Z"), false);
 
     @Test
-    void listsTheAdmins() throws Exception {
-        when(adminUserService.list("luisa@bg.es")).thenReturn(List.of(maria));
+    void listsOnePageOfAdmins() throws Exception {
+        when(adminUserService.list(eq("luisa@bg.es"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(maria), PageRequest.of(0, 5), 6));
 
         mockMvc.perform(get("/api/admin/users").with(user(admin)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].email").value("maria@bg.es"))
-                .andExpect(jsonPath("$[0].status").value("ACTIVE"))
-                .andExpect(jsonPath("$[0].twoFactorEnabled").value(true))
-                .andExpect(jsonPath("$[0].you").value(false));
+                .andExpect(jsonPath("$.content[0].email").value("maria@bg.es"))
+                .andExpect(jsonPath("$.content[0].status").value("ACTIVE"))
+                .andExpect(jsonPath("$.content[0].twoFactorEnabled").value(true))
+                .andExpect(jsonPath("$.content[0].you").value(false))
+                .andExpect(jsonPath("$.totalElements").value(6))
+                .andExpect(jsonPath("$.totalPages").value(2));
+    }
+
+    // BGSI-315: 5 per page by default, sorted by email
+    @Test
+    void asksForFiveAdminsByEmailByDefault() throws Exception {
+        when(adminUserService.list(eq("luisa@bg.es"), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/admin/users").with(user(admin))).andExpect(status().isOk());
+
+        verify(adminUserService).list(eq("luisa@bg.es"), argThat(pageable -> pageable.getPageNumber() == 0
+                && pageable.getPageSize() == 5 && pageable.getSort().equals(Sort.by("email"))));
+    }
+
+    @Test
+    void neverAsksForMoreThan50AdminsOrANegativePage() throws Exception {
+        when(adminUserService.list(eq("luisa@bg.es"), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/admin/users").param("page", "-3").param("size", "500").with(user(admin)))
+                .andExpect(status().isOk());
+
+        verify(adminUserService).list(eq("luisa@bg.es"),
+                argThat(pageable -> pageable.getPageNumber() == 0 && pageable.getPageSize() == 50));
     }
 
     @Test

@@ -16,6 +16,10 @@ import com.bgsistemas.api.user.UserStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -73,9 +77,14 @@ class AdminUserServiceTest {
     }
 
     @Test
-    void listsTheAdminsByEmailAndMarksTheLoggedInOne() {
-        List<AdminUserDTO> list = service.list("luisa@bg.es");
+    void listsOnePageOfAdminsAndMarksTheLoggedInOne() {
+        PageRequest firstPage = PageRequest.of(0, 5, Sort.by("email"));
+        when(userRepository.findByRole(Role.ADMIN, firstPage)).thenReturn(new PageImpl<>(List.of(me, other), firstPage, 7));
 
+        Page<AdminUserDTO> page = service.list("luisa@bg.es", firstPage);
+        List<AdminUserDTO> list = page.getContent();
+
+        assertThat(page.getTotalElements()).isEqualTo(7);
         assertThat(list).extracting(AdminUserDTO::email).containsExactly("luisa@bg.es", "maria@bg.es");
         assertThat(list.get(0).you()).isTrue();
         assertThat(list.get(1).you()).isFalse();
