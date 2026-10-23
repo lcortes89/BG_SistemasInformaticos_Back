@@ -7,12 +7,14 @@ import java.util.List;
 
 public interface ServiceService {
 
-    // Public website
+    // Public website: only active products of active brands (BGSI-309)
     List<Service> getAllServices();
 
     List<Service> getServicesByBrandId(Long brandId);
 
     List<Service> getFeaturedServices();
+
+    Page<Service> getVisibleServicesPage(Long brandId, Pageable pageable);
 
     // Admin panel (brandId = null -> all brands)
     Page<Service> getServicesPage(Long brandId, Pageable pageable);
@@ -24,4 +26,7 @@ public interface ServiceService {
     Service updateService(Long id, Service changes, Long brandId);
 
     void deleteService(Long id);
+
+    // BGSI-309: show or hide the product on the website without deleting it
+    Service setServiceActive(Long id, boolean active);
 }

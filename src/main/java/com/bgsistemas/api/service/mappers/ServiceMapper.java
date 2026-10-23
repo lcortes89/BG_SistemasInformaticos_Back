@@ -47,7 +47,8 @@ public class ServiceMapper {
                 service.getLongDescription(),
                 List.copyOf(service.getFeatures()),
                 List.copyOf(service.getSectors()),
-                service.getOfficialUrl()
+                service.getOfficialUrl(),
+                service.isActive()
         );
     }
 
@@ -64,6 +65,7 @@ public class ServiceMapper {
         service.setFeatures(cleanList(request.features()));
         service.setSectors(cleanList(request.sectors()));
         service.setOfficialUrl(blankToNull(request.officialUrl()));
+        service.setActive(!Boolean.FALSE.equals(request.active()));
         return service;
     }
 

@@ -67,7 +67,7 @@ class BrandControllerTest {
         ServiceDTO dto = new ServiceDTO(2L, "BDP One", "Multiplatform version", "bdp-one.jpg", 1L, "BDP");
         Pageable firstPage = PageRequest.of(0, 4);
 
-        when(serviceService.getServicesPage(eq(1L), any(Pageable.class)))
+        when(serviceService.getVisibleServicesPage(eq(1L), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(bdpOne), firstPage, 6));
         when(serviceMapper.toDTO(bdpOne)).thenReturn(dto);
 
@@ -80,17 +80,17 @@ class BrandControllerTest {
                 .andExpect(jsonPath("$.totalPages").value(2));
 
         // 4 products per page by default
-        verify(serviceService).getServicesPage(eq(1L), argThat(pageable -> pageable.getPageSize() == 4));
+        verify(serviceService).getVisibleServicesPage(eq(1L), argThat(pageable -> pageable.getPageSize() == 4));
     }
 
     @Test
     void shouldNeverAskForMoreThan50ServicesAtOnce() throws Exception {
-        when(serviceService.getServicesPage(eq(1L), any(Pageable.class)))
+        when(serviceService.getVisibleServicesPage(eq(1L), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 50), 0));
 
         mockMvc.perform(get("/api/brands/1/services").param("page", "0").param("size", "1000"))
                 .andExpect(status().isOk());
 
-        verify(serviceService).getServicesPage(eq(1L), argThat(pageable -> pageable.getPageSize() == 50));
+        verify(serviceService).getVisibleServicesPage(eq(1L), argThat(pageable -> pageable.getPageSize() == 50));
     }
 }

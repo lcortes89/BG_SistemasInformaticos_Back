@@ -99,4 +99,26 @@ class ClientServiceImplTest {
 
         verify(clientRepository).delete(client);
     }
+
+    // BGSI-309: active = published on the website
+    @Test
+    void shouldPublishClient() {
+        Client client = laPlaza();
+        client.setPublished(false);
+        when(clientRepository.findById(1L)).thenReturn(Optional.of(client));
+        when(clientRepository.save(client)).thenReturn(client);
+
+        Client result = clientService.setClientPublished(1L, true);
+
+        assertThat(result.isPublished()).isTrue();
+        verify(clientRepository).save(client);
+    }
+
+    @Test
+    void shouldThrowWhenChangingTheStateOfAnUnknownClient() {
+        when(clientRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clientService.setClientPublished(99L, false))
+                .isInstanceOf(ClientNotFoundException.class);
+    }
 }

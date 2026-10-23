@@ -43,13 +43,14 @@ public class BrandController {
                 .toList();
     }
 
-    // GET /api/brands/{id}/services?page=0&size=4 -> one page of products (BGSI-246), 404 if the brand does not exist
+    // GET /api/brands/{id}/services?page=0&size=4 -> one page of products (BGSI-246), 404 if the brand does not exist.
+    // Only the active products, and none if the brand is inactive (BGSI-309)
     @GetMapping("/{id}/services")
     public PageResponseDTO<ServiceDTO> getServicesByBrand(@PathVariable Long id,
                                                           @RequestParam(defaultValue = "0") int page,
                                                           @RequestParam(defaultValue = "4") int size) {
         brandService.getBrandById(id);
         PageRequest pageRequest = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE), Sort.by("id"));
-        return PageResponseDTO.from(serviceService.getServicesPage(id, pageRequest).map(serviceMapper::toDTO));
+        return PageResponseDTO.from(serviceService.getVisibleServicesPage(id, pageRequest).map(serviceMapper::toDTO));
     }
 }

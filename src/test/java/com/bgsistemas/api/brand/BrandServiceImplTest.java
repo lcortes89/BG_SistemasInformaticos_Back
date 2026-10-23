@@ -119,4 +119,27 @@ class BrandServiceImplTest {
         assertThatThrownBy(() -> brandService.deleteBrand(99L))
                 .isInstanceOf(BrandNotFoundException.class);
     }
+
+    // BGSI-309
+    @Test
+    void shouldInactivateBrand() {
+        Brand brand = bdp();
+        when(brandRepository.findById(1L)).thenReturn(Optional.of(brand));
+        when(brandRepository.save(brand)).thenReturn(brand);
+
+        Brand result = brandService.setBrandActive(1L, false);
+
+        assertThat(result.isActive()).isFalse();
+        verify(brandRepository).save(brand);
+    }
+
+    @Test
+    void shouldThrowWhenChangingTheStateOfAnUnknownBrand() {
+        when(brandRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> brandService.setBrandActive(99L, true))
+                .isInstanceOf(BrandNotFoundException.class);
+
+        verify(brandRepository, never()).save(any());
+    }
 }

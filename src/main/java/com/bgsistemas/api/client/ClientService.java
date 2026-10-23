@@ -18,4 +18,7 @@ public interface ClientService {
     Client updateClient(Long id, Client changes);
 
     void deleteClient(Long id);
+
+    // BGSI-309: active = published on the website
+    Client setClientPublished(Long id, boolean published);
 }

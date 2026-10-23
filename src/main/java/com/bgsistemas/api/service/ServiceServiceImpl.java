@@ -23,7 +23,7 @@ public class ServiceServiceImpl implements ServiceService {
 
     @Override
     public List<Service> getAllServices() {
-        return serviceRepository.findAll();
+        return serviceRepository.findVisible();
     }
 
     @Override
@@ -33,7 +33,12 @@ public class ServiceServiceImpl implements ServiceService {
 
     @Override
     public List<Service> getFeaturedServices() {
-        return serviceRepository.findByFeaturedTrue();
+        return serviceRepository.findVisibleFeatured();
+    }
+
+    @Override
+    public Page<Service> getVisibleServicesPage(Long brandId, Pageable pageable) {
+        return serviceRepository.findVisibleByBrandId(brandId, pageable);
     }
 
     @Override
@@ -68,6 +73,7 @@ public class ServiceServiceImpl implements ServiceService {
         service.setFeatures(changes.getFeatures());
         service.setSectors(changes.getSectors());
         service.setOfficialUrl(changes.getOfficialUrl());
+        service.setActive(changes.isActive());
         service.setBrand(findBrand(brandId));
         return serviceRepository.save(service);
     }
@@ -75,6 +81,13 @@ public class ServiceServiceImpl implements ServiceService {
     @Override
     public void deleteService(Long id) {
         serviceRepository.delete(getServiceById(id));
+    }
+
+    @Override
+    public Service setServiceActive(Long id, boolean active) {
+        Service service = getServiceById(id);
+        service.setActive(active);
+        return serviceRepository.save(service);
     }
 
     // Every service must belong to an existing brand

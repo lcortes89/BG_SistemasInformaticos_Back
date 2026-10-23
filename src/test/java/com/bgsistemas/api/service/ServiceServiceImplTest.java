@@ -40,7 +40,7 @@ class ServiceServiceImplTest {
     @Test
     void shouldReturnAllServices() {
         Service service = new Service(1L, "Web Design", "Custom website design", "design.jpg");
-        when(serviceRepository.findAll()).thenReturn(List.of(service));
+        when(serviceRepository.findVisible()).thenReturn(List.of(service));
 
         List<Service> result = serviceService.getAllServices();
 
@@ -63,7 +63,7 @@ class ServiceServiceImplTest {
     void shouldReturnFeaturedServices() {
         Service bdpOne = new Service(2L, "BDP One", "Multiplatform version", "bdp-one.jpg");
         bdpOne.setFeatured(true);
-        when(serviceRepository.findByFeaturedTrue()).thenReturn(List.of(bdpOne));
+        when(serviceRepository.findVisibleFeatured()).thenReturn(List.of(bdpOne));
 
         List<Service> result = serviceService.getFeaturedServices();
 
@@ -146,5 +146,59 @@ class ServiceServiceImplTest {
         serviceService.deleteService(1L);
 
         verify(serviceRepository).delete(service);
+    }
+
+    // BGSI-309: activate / inactivate
+
+    @Test
+    void shouldReturnOnlyTheVisibleProductsOfABrand() {
+        when(serviceRepository.findVisibleByBrandId(5L, pageRequest))
+                .thenReturn(new PageImpl<>(List.of(new Service(1L, "BDP One", "Text", null))));
+
+        assertThat(serviceService.getVisibleServicesPage(5L, pageRequest).getContent()).hasSize(1);
+    }
+
+    @Test
+    void shouldInactivateService() {
+        Service service = new Service(1L, "BDP One", "Text", null);
+        when(serviceRepository.findById(1L)).thenReturn(Optional.of(service));
+        when(serviceRepository.save(service)).thenReturn(service);
+
+        Service result = serviceService.setServiceActive(1L, false);
+
+        assertThat(result.isActive()).isFalse();
+        verify(serviceRepository).save(service);
+    }
+
+    @Test
+    void shouldActivateServiceAgain() {
+        Service service = new Service(1L, "BDP One", "Text", null);
+        service.setActive(false);
+        when(serviceRepository.findById(1L)).thenReturn(Optional.of(service));
+        when(serviceRepository.save(service)).thenReturn(service);
+
+        assertThat(serviceService.setServiceActive(1L, true).isActive()).isTrue();
+    }
+
+    @Test
+    void shouldThrowWhenChangingTheStateOfAnUnknownService() {
+        when(serviceRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> serviceService.setServiceActive(99L, false))
+                .isInstanceOf(ServiceNotFoundException.class);
+
+        verify(serviceRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldCopyTheStateWhenUpdating() {
+        Service existing = new Service(1L, "BDP One", "Text", null);
+        Service changes = new Service(null, "BDP One", "Text", null);
+        changes.setActive(false);
+        when(serviceRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(brandRepository.findById(5L)).thenReturn(Optional.of(bdp));
+        when(serviceRepository.save(existing)).thenReturn(existing);
+
+        assertThat(serviceService.updateService(1L, changes, 5L).isActive()).isFalse();
     }
 }
