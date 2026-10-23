@@ -3,6 +3,7 @@ package com.bgsistemas.api.brand;
 import com.bgsistemas.api.brand.dtos.AdminBrandDTO;
 import com.bgsistemas.api.brand.dtos.BrandRequestDTO;
 import com.bgsistemas.api.brand.mappers.BrandMapper;
+import com.bgsistemas.api.globals.ActiveRequestDTO;
 import com.bgsistemas.api.globals.PageResponseDTO;
 import com.bgsistemas.api.security.RequiresConfirmation;
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -53,6 +55,12 @@ public class AdminBrandController {
     @PutMapping("/{id}")
     public AdminBrandDTO updateBrand(@PathVariable Long id, @Valid @RequestBody BrandRequestDTO request) {
         return toAdminDTO(brandService.updateBrand(id, brandMapper.toEntity(request)));
+    }
+
+    // PATCH /api/admin/brands/{id}/active { "active": false } -> the brand and its products are hidden (BGSI-309)
+    @PatchMapping("/{id}/active")
+    public AdminBrandDTO setActive(@PathVariable Long id, @Valid @RequestBody ActiveRequestDTO request) {
+        return toAdminDTO(brandService.setBrandActive(id, request.active()));
     }
 
     // DELETE /api/admin/brands/{id} -> 204 No Content (409 if it still has services). Needs the password (BGSI-275)

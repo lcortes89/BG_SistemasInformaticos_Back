@@ -3,6 +3,7 @@ package com.bgsistemas.api.client;
 import com.bgsistemas.api.client.dtos.AdminClientDTO;
 import com.bgsistemas.api.client.dtos.ClientRequestDTO;
 import com.bgsistemas.api.client.mappers.ClientMapper;
+import com.bgsistemas.api.globals.ActiveRequestDTO;
 import com.bgsistemas.api.globals.PageResponseDTO;
 import com.bgsistemas.api.security.RequiresConfirmation;
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -53,6 +55,12 @@ public class AdminClientController {
     @PutMapping("/{id}")
     public AdminClientDTO updateClient(@PathVariable Long id, @Valid @RequestBody ClientRequestDTO request) {
         return clientMapper.toAdminDTO(clientService.updateClient(id, clientMapper.toEntity(request)));
+    }
+
+    // PATCH /api/admin/clients/{id}/active { "active": false } -> hidden from the website (BGSI-309)
+    @PatchMapping("/{id}/active")
+    public AdminClientDTO setActive(@PathVariable Long id, @Valid @RequestBody ActiveRequestDTO request) {
+        return clientMapper.toAdminDTO(clientService.setClientPublished(id, request.active()));
     }
 
     // DELETE /api/admin/clients/{id} -> 204 No Content. Needs the password (BGSI-275)

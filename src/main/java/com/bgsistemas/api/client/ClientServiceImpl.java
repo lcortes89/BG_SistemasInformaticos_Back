@@ -52,4 +52,11 @@ public class ClientServiceImpl implements ClientService {
     public void deleteClient(Long id) {
         clientRepository.delete(getClientById(id));
     }
+
+    @Override
+    public Client setClientPublished(Long id, boolean published) {
+        Client client = getClientById(id);
+        client.setPublished(published);
+        return clientRepository.save(client);
+    }
 }

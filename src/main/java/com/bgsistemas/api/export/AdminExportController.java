@@ -69,7 +69,7 @@ public class AdminExportController {
                 .map(this::serviceRow)
                 .toList();
         ExportTable table = new ExportTable("Productos",
-                List.of("Nombre", "Marca", "Descripción", "Destacado"), rows);
+                List.of("Nombre", "Marca", "Descripción", "Destacado", "Estado"), rows);
         return exportService.download(table, exportFormat, "productos");
     }
 
@@ -96,7 +96,8 @@ public class AdminExportController {
                 text(service.getName()),
                 service.getBrand() != null ? text(service.getBrand().getName()) : "",
                 text(service.getDescription()),
-                service.isFeatured() ? "Sí" : "No");
+                service.isFeatured() ? "Sí" : "No",
+                service.isActive() ? "Activo" : "Inactivo");
     }
 
     // List.of does not accept null values

@@ -22,4 +22,7 @@ public interface BrandService {
     void deleteBrand(Long id);
 
     long countServices(Long brandId);
+
+    // BGSI-309: show or hide the brand (and its products) on the website without deleting it
+    Brand setBrandActive(Long id, boolean active);
 }

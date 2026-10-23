@@ -1,5 +1,6 @@
 package com.bgsistemas.api.service;
 
+import com.bgsistemas.api.globals.ActiveRequestDTO;
 import com.bgsistemas.api.globals.PageResponseDTO;
 import com.bgsistemas.api.security.RequiresConfirmation;
 import com.bgsistemas.api.service.dtos.AdminServiceDTO;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -56,6 +58,12 @@ public class AdminServiceController {
     public AdminServiceDTO updateService(@PathVariable Long id, @Valid @RequestBody ServiceRequestDTO request) {
         Service updated = serviceService.updateService(id, serviceMapper.toEntity(request), request.brandId());
         return serviceMapper.toAdminDTO(updated);
+    }
+
+    // PATCH /api/admin/services/{id}/active { "active": false } -> hidden from the website (BGSI-309)
+    @PatchMapping("/{id}/active")
+    public AdminServiceDTO setActive(@PathVariable Long id, @Valid @RequestBody ActiveRequestDTO request) {
+        return serviceMapper.toAdminDTO(serviceService.setServiceActive(id, request.active()));
     }
 
     // DELETE /api/admin/services/{id} -> 204 No Content. Needs the password (BGSI-275)

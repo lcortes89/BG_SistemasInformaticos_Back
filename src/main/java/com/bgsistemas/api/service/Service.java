@@ -45,6 +45,10 @@ public class Service {
     // Link to the official product page (maker website)
     private String officialUrl;
 
+    // BGSI-309: an inactive product is hidden from the public website.
+    // Nullable on purpose: the rows saved before this column existed get null, and null means active
+    private Boolean active = Boolean.TRUE;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "brand_id")
     private Brand brand;
@@ -132,6 +136,14 @@ public class Service {
 
     public void setOfficialUrl(String officialUrl) {
         this.officialUrl = officialUrl;
+    }
+
+    public boolean isActive() {
+        return active == null || active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     public Brand getBrand() {

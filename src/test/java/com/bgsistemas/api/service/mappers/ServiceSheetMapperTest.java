@@ -50,7 +50,7 @@ class ServiceSheetMapperTest {
     @Test
     void shouldCleanTheListsOfTheForm() {
         ServiceRequestDTO request = new ServiceRequestDTO("BDP One", null, null, false, 5L, "  ",
-                Arrays.asList("  Orders  ", "", null, "Line\nbreak"), null, "   ");
+                Arrays.asList("  Orders  ", "", null, "Line\nbreak"), null, "   ", null);
 
         Service service = mapper.toEntity(request);
 
@@ -63,7 +63,7 @@ class ServiceSheetMapperTest {
     @Test
     void shouldTrimTheOfficialUrl() {
         ServiceRequestDTO request = new ServiceRequestDTO("BDP One", null, null, false, 5L, null,
-                null, null, "  " + OFFICIAL_URL + "  ");
+                null, null, "  " + OFFICIAL_URL + "  ", null);
 
         Service service = mapper.toEntity(request);
 

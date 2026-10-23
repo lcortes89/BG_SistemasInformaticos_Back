@@ -38,6 +38,9 @@ public record ServiceRequestDTO(
         // Official product page: optional (empty is fine), otherwise it must be a web address
         @Size(max = 255, message = "Official URL must be at most 255 characters")
         @Pattern(regexp = "^$|^https?://\\S+$", message = "Official URL must start with http:// or https://")
-        String officialUrl
+        String officialUrl,
+
+        // BGSI-309: optional. Not sent (null) = active, so older clients of the API do not hide products
+        Boolean active
 ) {
 }

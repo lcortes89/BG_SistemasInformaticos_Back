@@ -68,4 +68,11 @@ public class BrandServiceImpl implements BrandService {
     public long countServices(Long brandId) {
         return serviceRepository.countByBrandId(brandId);
     }
+
+    @Override
+    public Brand setBrandActive(Long id, boolean active) {
+        Brand brand = getBrandById(id);
+        brand.setActive(active);
+        return brandRepository.save(brand);
+    }
 }
