@@ -144,8 +144,28 @@ class AdminUsersIntegrationTest {
     void theListShowsTheStatusAndWhoYouAre() throws Exception {
         SecurityUser luisa = saveAdmin("luisa-list@test.com");
 
-        mockMvc.perform(get("/api/admin/users").with(user(luisa)))
+        mockMvc.perform(get("/api/admin/users").param("size", "50").with(user(luisa)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.email == 'luisa-list@test.com')].you").value(true));
+                .andExpect(jsonPath("$.content[?(@.email == 'luisa-list@test.com')].you").value(true));
+    }
+
+    // BGSI-315: the list comes one page at a time, sorted by email ("000-" goes before any other email)
+    @Test
+    void theListComesOnePageAtATimeSortedByEmail() throws Exception {
+        SecurityUser luisa = saveAdmin("000-page-c@test.com");
+        saveAdmin("000-page-a@test.com");
+        saveAdmin("000-page-b@test.com");
+
+        mockMvc.perform(get("/api/admin/users").param("size", "2").with(user(luisa)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].email").value("000-page-a@test.com"))
+                .andExpect(jsonPath("$.content[1].email").value("000-page-b@test.com"))
+                .andExpect(jsonPath("$.size").value(2))
+                .andExpect(jsonPath("$.last").value(false));
+
+        mockMvc.perform(get("/api/admin/users").param("size", "2").param("page", "1").with(user(luisa)))
+                .andExpect(jsonPath("$.content[0].email").value("000-page-c@test.com"))
+                .andExpect(jsonPath("$.content[0].you").value(true));
     }
 }

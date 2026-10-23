@@ -1,5 +1,7 @@
 package com.bgsistemas.api.user;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -15,4 +17,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // BGSI-291: the admins that receive the security alerts
     List<User> findByRole(Role role);
+
+    // BGSI-315: "Administradores", one page at a time
+    Page<User> findByRole(Role role, Pageable pageable);
 }
