@@ -16,8 +16,8 @@ public interface ServiceService {
 
     Page<Service> getVisibleServicesPage(Long brandId, Pageable pageable);
 
-    // Admin panel (brandId = null -> all brands)
-    Page<Service> getServicesPage(Long brandId, Pageable pageable);
+    // Admin panel (brandId = null -> all brands). BGSI-302: search = product or brand name, active. null = no filter
+    Page<Service> getServicesPage(Long brandId, String search, Boolean active, Pageable pageable);
 
     Service getServiceById(Long id);
 

@@ -36,11 +36,13 @@ public class AdminExportController {
         this.exportService = exportService;
     }
 
-    // GET /api/admin/clients/export?format=pdf|xlsx
+    // GET /api/admin/clients/export?format=pdf|xlsx&q=plaza&active=true -> the same filters as the table (BGSI-302)
     @GetMapping("/clients/export")
-    public ResponseEntity<byte[]> exportClients(@RequestParam String format) {
+    public ResponseEntity<byte[]> exportClients(@RequestParam String format,
+                                                @RequestParam(required = false) String q,
+                                                @RequestParam(required = false) Boolean active) {
         ExportFormat exportFormat = ExportFormat.from(format); // first: a wrong format is a 400
-        List<List<String>> rows = clientService.getClientsPage(ALL_BY_NAME).stream()
+        List<List<String>> rows = clientService.getClientsPage(q, active, ALL_BY_NAME).stream()
                 .map(this::clientRow)
                 .toList();
         ExportTable table = new ExportTable("Clientes",
@@ -48,11 +50,13 @@ public class AdminExportController {
         return exportService.download(table, exportFormat, "clientes");
     }
 
-    // GET /api/admin/brands/export?format=pdf|xlsx
+    // GET /api/admin/brands/export?format=pdf|xlsx&q=bdp&active=true -> the same filters as the table (BGSI-302)
     @GetMapping("/brands/export")
-    public ResponseEntity<byte[]> exportBrands(@RequestParam String format) {
+    public ResponseEntity<byte[]> exportBrands(@RequestParam String format,
+                                               @RequestParam(required = false) String q,
+                                               @RequestParam(required = false) Boolean active) {
         ExportFormat exportFormat = ExportFormat.from(format); // first: a wrong format is a 400
-        List<List<String>> rows = brandService.getBrandsPage(ALL_BY_NAME).stream()
+        List<List<String>> rows = brandService.getBrandsPage(q, active, ALL_BY_NAME).stream()
                 .map(this::brandRow)
                 .toList();
         ExportTable table = new ExportTable("Marcas",
@@ -60,12 +64,14 @@ public class AdminExportController {
         return exportService.download(table, exportFormat, "marcas");
     }
 
-    // GET /api/admin/services/export?format=pdf|xlsx&brandId=1 -> the same filter as the table
+    // GET /api/admin/services/export?format=pdf|xlsx&brandId=1&q=one&active=true -> the same filters as the table
     @GetMapping("/services/export")
     public ResponseEntity<byte[]> exportServices(@RequestParam String format,
-                                                 @RequestParam(required = false) Long brandId) {
+                                                 @RequestParam(required = false) Long brandId,
+                                                 @RequestParam(required = false) String q,
+                                                 @RequestParam(required = false) Boolean active) {
         ExportFormat exportFormat = ExportFormat.from(format); // first: a wrong format is a 400
-        List<List<String>> rows = serviceService.getServicesPage(brandId, ALL_BY_NAME).stream()
+        List<List<String>> rows = serviceService.getServicesPage(brandId, q, active, ALL_BY_NAME).stream()
                 .map(this::serviceRow)
                 .toList();
         ExportTable table = new ExportTable("Productos",

@@ -63,7 +63,7 @@ class AdminContactControllerTest {
 
     @Test
     void shouldReturnContactsPageToAdmin() throws Exception {
-        when(contactService.getContacts(any(), any(Pageable.class)))
+        when(contactService.getContacts(any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(contact), PageRequest.of(0, 10), 1));
         when(contactMapper.toResponse(contact)).thenReturn(responseWith("NEW", null));
 
@@ -74,17 +74,18 @@ class AdminContactControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(1));
     }
 
+    // BGSI-302: q = text of the search box
     @Test
     void shouldFilterByStatusAndSortNewestFirst() throws Exception {
-        when(contactService.getContacts(any(), any(Pageable.class)))
+        when(contactService.getContacts(any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(1, 5), 0));
 
         mockMvc.perform(get("/api/admin/contacts").with(user(admin))
-                        .param("status", "CONTACTED").param("page", "1").param("size", "5"))
+                        .param("status", "CONTACTED").param("q", "marta").param("page", "1").param("size", "5"))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(contactService).getContacts(eq(ContactStatus.CONTACTED), captor.capture());
+        verify(contactService).getContacts(eq(ContactStatus.CONTACTED), eq("marta"), captor.capture());
         assertThat(captor.getValue().getPageNumber()).isEqualTo(1);
         assertThat(captor.getValue().getPageSize()).isEqualTo(5);
         assertThat(captor.getValue().getSort().getOrderFor("createdAt").getDirection()).isEqualTo(Sort.Direction.DESC);
@@ -102,7 +103,7 @@ class AdminContactControllerTest {
         mockMvc.perform(get("/api/admin/contacts"))
                 .andExpect(status().isUnauthorized());
 
-        verify(contactService, never()).getContacts(any(), any());
+        verify(contactService, never()).getContacts(any(), any(), any());
     }
 
     @Test
@@ -110,7 +111,7 @@ class AdminContactControllerTest {
         mockMvc.perform(get("/api/admin/contacts").with(user("visitor@mail.com").roles("USER")))
                 .andExpect(status().isForbidden());
 
-        verify(contactService, never()).getContacts(any(), any());
+        verify(contactService, never()).getContacts(any(), any(), any());
     }
 
     // ---------- PATCH ----------

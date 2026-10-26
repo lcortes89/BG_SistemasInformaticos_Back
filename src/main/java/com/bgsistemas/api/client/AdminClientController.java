@@ -38,10 +38,12 @@ public class AdminClientController {
 
     // GET /api/admin/clients?page=0&size=10 -> all clients (published or not), by name
     @GetMapping
-    public PageResponseDTO<AdminClientDTO> getClients(@RequestParam(defaultValue = "0") int page,
+    public PageResponseDTO<AdminClientDTO> getClients(@RequestParam(required = false) String q,
+                                                      @RequestParam(required = false) Boolean active,
+                                                      @RequestParam(defaultValue = "0") int page,
                                                       @RequestParam(defaultValue = "10") int size) {
         PageRequest pageRequest = PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE), Sort.by("name"));
-        return PageResponseDTO.from(clientService.getClientsPage(pageRequest).map(clientMapper::toAdminDTO));
+        return PageResponseDTO.from(clientService.getClientsPage(q, active, pageRequest).map(clientMapper::toAdminDTO));
     }
 
     // POST /api/admin/clients -> 201 Created

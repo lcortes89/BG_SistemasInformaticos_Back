@@ -4,6 +4,7 @@ import com.bgsistemas.api.adminuser.dtos.AdminEmailRequestDTO;
 import com.bgsistemas.api.adminuser.dtos.AdminUserDTO;
 import com.bgsistemas.api.globals.PageResponseDTO;
 import com.bgsistemas.api.security.RequiresConfirmation;
+import com.bgsistemas.api.user.UserStatus;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -33,13 +34,16 @@ public class AdminUserController {
         this.adminUserService = adminUserService;
     }
 
-    // GET /api/admin/users?page=0&size=5 -> one page of admins, by email (BGSI-315)
+    // GET /api/admin/users?q=ana&status=PENDING&page=0&size=5 -> one page of admins, by email
+    // (BGSI-315; q and status: BGSI-302)
     @GetMapping
-    public PageResponseDTO<AdminUserDTO> list(@RequestParam(defaultValue = "0") int page,
+    public PageResponseDTO<AdminUserDTO> list(@RequestParam(required = false) String q,
+                                              @RequestParam(required = false) UserStatus status,
+                                              @RequestParam(defaultValue = "0") int page,
                                               @RequestParam(defaultValue = "5") int size,
                                               Authentication authentication) {
         PageRequest pageRequest = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE), Sort.by("email"));
-        return PageResponseDTO.from(adminUserService.list(authentication.getName(), pageRequest));
+        return PageResponseDTO.from(adminUserService.list(authentication.getName(), q, status, pageRequest));
     }
 
     // POST /invitations { email } -> 201 (409 if the email already exists)

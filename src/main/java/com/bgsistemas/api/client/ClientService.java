@@ -9,7 +9,8 @@ public interface ClientService {
     Page<Client> getPublishedClients(Pageable pageable);
 
     // Admin panel
-    Page<Client> getClientsPage(Pageable pageable);
+    // BGSI-302: search = name or type of business, active = published. null = no filter
+    Page<Client> getClientsPage(String search, Boolean active, Pageable pageable);
 
     Client getClientById(Long id);
 

@@ -79,9 +79,9 @@ class AdminUserServiceTest {
     @Test
     void listsOnePageOfAdminsAndMarksTheLoggedInOne() {
         PageRequest firstPage = PageRequest.of(0, 5, Sort.by("email"));
-        when(userRepository.findByRole(Role.ADMIN, firstPage)).thenReturn(new PageImpl<>(List.of(me, other), firstPage, 7));
+        when(userRepository.search(Role.ADMIN, null, null, firstPage)).thenReturn(new PageImpl<>(List.of(me, other), firstPage, 7));
 
-        Page<AdminUserDTO> page = service.list("luisa@bg.es", firstPage);
+        Page<AdminUserDTO> page = service.list("luisa@bg.es", null, null, firstPage);
         List<AdminUserDTO> list = page.getContent();
 
         assertThat(page.getTotalElements()).isEqualTo(7);
@@ -89,6 +89,18 @@ class AdminUserServiceTest {
         assertThat(list.get(0).you()).isTrue();
         assertThat(list.get(1).you()).isFalse();
         assertThat(list.get(1).status()).isEqualTo("ACTIVE");
+    }
+
+    // BGSI-302: search box (email) + status
+    @Test
+    void listPassesTheSearchAsALikePatternAndTheStatus() {
+        PageRequest firstPage = PageRequest.of(0, 5, Sort.by("email"));
+        when(userRepository.search(Role.ADMIN, "%maria%", UserStatus.ACTIVE, firstPage))
+                .thenReturn(new PageImpl<>(List.of(other), firstPage, 1));
+
+        Page<AdminUserDTO> page = service.list("luisa@bg.es", " Maria ", UserStatus.ACTIVE, firstPage);
+
+        assertThat(page.getContent()).extracting(AdminUserDTO::email).containsExactly("maria@bg.es");
     }
 
     @Test

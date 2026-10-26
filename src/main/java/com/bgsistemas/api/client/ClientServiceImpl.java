@@ -1,6 +1,7 @@
 package com.bgsistemas.api.client;
 
 import com.bgsistemas.api.client.exceptions.ClientNotFoundException;
+import com.bgsistemas.api.globals.SearchText;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -20,8 +21,8 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
-    public Page<Client> getClientsPage(Pageable pageable) {
-        return clientRepository.findAll(pageable);
+    public Page<Client> getClientsPage(String search, Boolean active, Pageable pageable) {
+        return clientRepository.search(SearchText.likePattern(search), active, pageable);
     }
 
     @Override

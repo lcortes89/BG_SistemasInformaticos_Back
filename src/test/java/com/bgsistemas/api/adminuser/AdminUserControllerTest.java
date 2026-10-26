@@ -7,6 +7,7 @@ import com.bgsistemas.api.globals.ResourceConflictException;
 import com.bgsistemas.api.security.SecurityUser;
 import com.bgsistemas.api.user.Role;
 import com.bgsistemas.api.user.User;
+import com.bgsistemas.api.user.UserStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -25,6 +26,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -51,7 +53,7 @@ class AdminUserControllerTest {
 
     @Test
     void listsOnePageOfAdmins() throws Exception {
-        when(adminUserService.list(eq("luisa@bg.es"), any(Pageable.class)))
+        when(adminUserService.list(eq("luisa@bg.es"), any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(maria), PageRequest.of(0, 5), 6));
 
         mockMvc.perform(get("/api/admin/users").with(user(admin)))
@@ -67,23 +69,34 @@ class AdminUserControllerTest {
     // BGSI-315: 5 per page by default, sorted by email
     @Test
     void asksForFiveAdminsByEmailByDefault() throws Exception {
-        when(adminUserService.list(eq("luisa@bg.es"), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+        when(adminUserService.list(eq("luisa@bg.es"), any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/users").with(user(admin))).andExpect(status().isOk());
 
-        verify(adminUserService).list(eq("luisa@bg.es"), argThat(pageable -> pageable.getPageNumber() == 0
+        verify(adminUserService).list(eq("luisa@bg.es"), isNull(), isNull(), argThat(pageable -> pageable.getPageNumber() == 0
                 && pageable.getPageSize() == 5 && pageable.getSort().equals(Sort.by("email"))));
     }
 
     @Test
     void neverAsksForMoreThan50AdminsOrANegativePage() throws Exception {
-        when(adminUserService.list(eq("luisa@bg.es"), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+        when(adminUserService.list(eq("luisa@bg.es"), any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/users").param("page", "-3").param("size", "500").with(user(admin)))
                 .andExpect(status().isOk());
 
-        verify(adminUserService).list(eq("luisa@bg.es"),
+        verify(adminUserService).list(eq("luisa@bg.es"), isNull(), isNull(),
                 argThat(pageable -> pageable.getPageNumber() == 0 && pageable.getPageSize() == 50));
+    }
+
+    // BGSI-302: search box (email) + status
+    @Test
+    void passesTheSearchAndTheStatusToTheService() throws Exception {
+        when(adminUserService.list(eq("luisa@bg.es"), any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/admin/users").param("q", "ana").param("status", "PENDING").with(user(admin)))
+                .andExpect(status().isOk());
+
+        verify(adminUserService).list(eq("luisa@bg.es"), eq("ana"), eq(UserStatus.PENDING), any(Pageable.class));
     }
 
     @Test

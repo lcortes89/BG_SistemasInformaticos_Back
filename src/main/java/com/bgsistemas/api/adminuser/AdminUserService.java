@@ -5,6 +5,7 @@ import com.bgsistemas.api.auth.exceptions.EmailAlreadyExistsException;
 import com.bgsistemas.api.emailchange.EmailChangeTokenRepository;
 import com.bgsistemas.api.globals.ResourceConflictException;
 import com.bgsistemas.api.globals.ResourceNotFoundException;
+import com.bgsistemas.api.globals.SearchText;
 import com.bgsistemas.api.passwordreset.PasswordResetEmailSender;
 import com.bgsistemas.api.passwordreset.PasswordResetService;
 import com.bgsistemas.api.passwordreset.PasswordResetTokenRepository;
@@ -57,9 +58,11 @@ public class AdminUserService {
         this.emailChangeTokenRepository = emailChangeTokenRepository;
     }
 
-    // BGSI-315: one page of admins (the order comes in the pageable)
-    public Page<AdminUserDTO> list(String currentEmail, Pageable pageable) {
-        return userRepository.findByRole(Role.ADMIN, pageable).map(user -> toDTO(user, currentEmail));
+    // BGSI-315: one page of admins (the order comes in the pageable).
+    // BGSI-302: search = part of the email, status. null = no filter
+    public Page<AdminUserDTO> list(String currentEmail, String search, UserStatus status, Pageable pageable) {
+        return userRepository.search(Role.ADMIN, SearchText.likePattern(search), status, pageable)
+                .map(user -> toDTO(user, currentEmail));
     }
 
     // Creates the admin as PENDING with a random password nobody knows and emails the invitation

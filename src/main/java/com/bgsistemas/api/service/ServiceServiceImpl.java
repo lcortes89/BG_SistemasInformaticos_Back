@@ -3,6 +3,7 @@ package com.bgsistemas.api.service;
 import com.bgsistemas.api.brand.Brand;
 import com.bgsistemas.api.brand.BrandRepository;
 import com.bgsistemas.api.brand.exceptions.BrandNotFoundException;
+import com.bgsistemas.api.globals.SearchText;
 import com.bgsistemas.api.service.exceptions.ServiceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,11 +43,8 @@ public class ServiceServiceImpl implements ServiceService {
     }
 
     @Override
-    public Page<Service> getServicesPage(Long brandId, Pageable pageable) {
-        if (brandId == null) {
-            return serviceRepository.findAll(pageable);
-        }
-        return serviceRepository.findByBrandId(brandId, pageable);
+    public Page<Service> getServicesPage(Long brandId, String search, Boolean active, Pageable pageable) {
+        return serviceRepository.search(brandId, SearchText.likePattern(search), active, pageable);
     }
 
     @Override

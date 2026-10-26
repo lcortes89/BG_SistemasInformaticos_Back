@@ -2,6 +2,7 @@ package com.bgsistemas.api.brand;
 
 import com.bgsistemas.api.brand.exceptions.BrandInUseException;
 import com.bgsistemas.api.brand.exceptions.BrandNotFoundException;
+import com.bgsistemas.api.globals.SearchText;
 import com.bgsistemas.api.service.ServiceRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,8 +33,8 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
-    public Page<Brand> getBrandsPage(Pageable pageable) {
-        return brandRepository.findAll(pageable);
+    public Page<Brand> getBrandsPage(String search, Boolean active, Pageable pageable) {
+        return brandRepository.search(SearchText.likePattern(search), active, pageable);
     }
 
     @Override

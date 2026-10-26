@@ -54,7 +54,7 @@ class AdminClientControllerTest {
 
     @Test
     void shouldReturnClientsPageIncludingUnpublished() throws Exception {
-        when(clientService.getClientsPage(any(Pageable.class)))
+        when(clientService.getClientsPage(any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(laPlaza), PageRequest.of(0, 10), 1));
 
         mockMvc.perform(get("/api/admin/clients").with(user(admin)))
@@ -62,6 +62,17 @@ class AdminClientControllerTest {
                 .andExpect(jsonPath("$.content[0].name").value("Bar La Plaza"))
                 .andExpect(jsonPath("$.content[0].published").value(false))
                 .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    // BGSI-302: search box + active (= published)
+    @Test
+    void shouldPassTheSearchAndTheActiveFilter() throws Exception {
+        when(clientService.getClientsPage(any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/admin/clients").with(user(admin)).param("q", "plaza").param("active", "true"))
+                .andExpect(status().isOk());
+
+        verify(clientService).getClientsPage(eq("plaza"), eq(true), any(Pageable.class));
     }
 
     @Test

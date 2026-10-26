@@ -47,12 +47,22 @@ class ClientServiceImplTest {
     @Test
     void shouldReturnAllClientsPageForTheAdmin() {
         Client draft = new Client(2L, "Café Central", "Cafeteria", "Pending", null, 4, false);
-        when(clientRepository.findAll(pageRequest))
+        when(clientRepository.search(null, null, pageRequest))
                 .thenReturn(new PageImpl<>(List.of(laPlaza(), draft), pageRequest, 2));
 
-        Page<Client> result = clientService.getClientsPage(pageRequest);
+        Page<Client> result = clientService.getClientsPage(null, null, pageRequest);
 
         assertThat(result.getContent()).extracting(Client::isPublished).containsExactly(true, false);
+    }
+
+    // BGSI-302: search box + active
+    @Test
+    void shouldSearchClientsPageForTheAdmin() {
+        when(clientRepository.search("%plaza%", true, pageRequest)).thenReturn(new PageImpl<>(List.of(laPlaza()), pageRequest, 1));
+
+        Page<Client> result = clientService.getClientsPage("Plaza", true, pageRequest);
+
+        assertThat(result.getContent()).extracting(Client::getName).containsExactly("Bar La Plaza");
     }
 
     @Test

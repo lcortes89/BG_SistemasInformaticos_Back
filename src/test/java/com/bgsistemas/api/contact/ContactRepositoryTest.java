@@ -42,7 +42,7 @@ class ContactRepositoryTest {
         contactRepository.save(newContact("New 3", ContactStatus.NEW));
         contactRepository.save(newContact("Contacted", ContactStatus.CONTACTED));
 
-        Page<Contact> firstPage = contactRepository.findByStatus(ContactStatus.NEW, PageRequest.of(0, 2));
+        Page<Contact> firstPage = contactRepository.search(ContactStatus.NEW, null, PageRequest.of(0, 2));
 
         assertThat(firstPage.getContent()).hasSize(2);
         assertThat(firstPage.getTotalElements()).isEqualTo(3);
@@ -57,6 +57,41 @@ class ContactRepositoryTest {
 
         assertThat(contactRepository.countByStatus(ContactStatus.NEW)).isEqualTo(2);
         assertThat(contactRepository.countByStatus(ContactStatus.CONTACTED)).isZero();
+    }
+
+    // BGSI-302: search box (name, email or product) + status
+
+    @Test
+    void shouldSearchByNameEmailOrProductIgnoringCase() {
+        contactRepository.save(new Contact("Marta Gil", "marta@mail.com", null, "BDP One", "Hi", true));
+        contactRepository.save(new Contact("Pedro", "pedro@bar.es", null, "PUDU BellaBot", "Hi", true));
+        contactRepository.save(new Contact("Ana", "ana@mail.com", null, null, "Hi", true));
+
+        assertThat(names(contactRepository.search(null, "%marta%", PageRequest.of(0, 10)))).containsExactly("Marta Gil");
+        assertThat(names(contactRepository.search(null, "%bar.es%", PageRequest.of(0, 10)))).containsExactly("Pedro");
+        assertThat(names(contactRepository.search(null, "%bellabot%", PageRequest.of(0, 10)))).containsExactly("Pedro");
+        assertThat(contactRepository.search(null, null, PageRequest.of(0, 10)).getTotalElements()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldCombineTheSearchWithTheStatus() {
+        contactRepository.save(newContact("Bar Nuevo", ContactStatus.NEW));
+        contactRepository.save(newContact("Bar Contactado", ContactStatus.CONTACTED));
+
+        assertThat(names(contactRepository.search(ContactStatus.CONTACTED, "%bar%", PageRequest.of(0, 10))))
+                .containsExactly("Bar Contactado");
+    }
+
+    @Test
+    void shouldSearchPercentSignsAsNormalText() {
+        contactRepository.save(newContact("100% Bar", ContactStatus.NEW));
+        contactRepository.save(newContact("Bar", ContactStatus.NEW));
+
+        assertThat(names(contactRepository.search(null, "%!%%", PageRequest.of(0, 10)))).containsExactly("100% Bar");
+    }
+
+    private List<String> names(Page<Contact> page) {
+        return page.getContent().stream().map(Contact::getName).toList();
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.bgsistemas.api.contact;
 
 import com.bgsistemas.api.contact.exceptions.ContactNotFoundException;
+import com.bgsistemas.api.globals.SearchText;
 import com.bgsistemas.api.notification.NotificationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,11 +31,8 @@ public class ContactServiceImpl implements ContactService {
     }
 
     @Override
-    public Page<Contact> getContacts(ContactStatus status, Pageable pageable) {
-        if (status == null) {
-            return contactRepository.findAll(pageable);
-        }
-        return contactRepository.findByStatus(status, pageable);
+    public Page<Contact> getContacts(ContactStatus status, String search, Pageable pageable) {
+        return contactRepository.search(status, SearchText.likePattern(search), pageable);
     }
 
     @Override

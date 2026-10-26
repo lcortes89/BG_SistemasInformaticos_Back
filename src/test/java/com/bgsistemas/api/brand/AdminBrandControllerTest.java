@@ -56,7 +56,7 @@ class AdminBrandControllerTest {
 
     @Test
     void shouldReturnBrandsPageWithServiceCount() throws Exception {
-        when(brandService.getBrandsPage(any(Pageable.class)))
+        when(brandService.getBrandsPage(any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(bdp), PageRequest.of(0, 10), 1));
         when(brandService.countServices(1L)).thenReturn(2L);
 
@@ -66,6 +66,17 @@ class AdminBrandControllerTest {
                 .andExpect(jsonPath("$.content[0].active").value(true))
                 .andExpect(jsonPath("$.content[0].serviceCount").value(2))
                 .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    // BGSI-302: search box + active
+    @Test
+    void shouldPassTheSearchAndTheActiveFilter() throws Exception {
+        when(brandService.getBrandsPage(any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/admin/brands").with(user(admin)).param("q", "bdp").param("active", "false"))
+                .andExpect(status().isOk());
+
+        verify(brandService).getBrandsPage(eq("bdp"), eq(false), any(Pageable.class));
     }
 
     @Test

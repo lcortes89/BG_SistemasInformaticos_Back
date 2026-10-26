@@ -32,15 +32,16 @@ public class AdminContactController {
         this.contactMapper = contactMapper;
     }
 
-    // GET /api/admin/contacts?status=NEW&page=0&size=10 -> newest first
+    // GET /api/admin/contacts?status=NEW&q=marta&page=0&size=10 -> newest first (q: BGSI-302)
     @GetMapping
     public PageResponseDTO<ContactResponseDTO> getContacts(@RequestParam(required = false) ContactStatus status,
+                                                           @RequestParam(required = false) String q,
                                                            @RequestParam(defaultValue = "0") int page,
                                                            @RequestParam(defaultValue = "10") int size) {
         PageRequest pageRequest = PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
         return PageResponseDTO.from(
-                contactService.getContacts(status, pageRequest).map(contactMapper::toResponse));
+                contactService.getContacts(status, q, pageRequest).map(contactMapper::toResponse));
     }
 
     // PATCH /api/admin/contacts/{id}  { "status": "CONTACTED", "note": "..." }

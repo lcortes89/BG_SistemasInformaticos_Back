@@ -65,25 +65,24 @@ class ContactServiceImplTest {
     }
 
     @Test
-    void shouldReturnAllContactsWhenNoStatusIsGiven() {
+    void shouldReturnAllContactsWhenThereAreNoFilters() {
         Contact contact = sampleContact();
-        when(contactRepository.findAll(pageRequest)).thenReturn(new PageImpl<>(List.of(contact), pageRequest, 1));
+        when(contactRepository.search(null, null, pageRequest)).thenReturn(new PageImpl<>(List.of(contact), pageRequest, 1));
 
-        Page<Contact> result = contactService.getContacts(null, pageRequest);
+        Page<Contact> result = contactService.getContacts(null, "  ", pageRequest);
 
         assertThat(result.getContent()).hasSize(1);
-        verify(contactRepository, never()).findByStatus(any(), any());
     }
 
+    // BGSI-302: the text of the search box goes to the query as a LIKE pattern
     @Test
-    void shouldFilterContactsByStatus() {
-        when(contactRepository.findByStatus(ContactStatus.NEW, pageRequest))
+    void shouldFilterContactsByStatusAndText() {
+        when(contactRepository.search(ContactStatus.NEW, "%marta%", pageRequest))
                 .thenReturn(new PageImpl<>(List.of(), pageRequest, 0));
 
-        contactService.getContacts(ContactStatus.NEW, pageRequest);
+        contactService.getContacts(ContactStatus.NEW, " Marta ", pageRequest);
 
-        verify(contactRepository).findByStatus(ContactStatus.NEW, pageRequest);
-        verify(contactRepository, never()).findAll(pageRequest);
+        verify(contactRepository).search(ContactStatus.NEW, "%marta%", pageRequest);
     }
 
     @Test

@@ -38,10 +38,12 @@ public class AdminBrandController {
 
     // GET /api/admin/brands?page=0&size=10 -> all brands (active or not), by name
     @GetMapping
-    public PageResponseDTO<AdminBrandDTO> getBrands(@RequestParam(defaultValue = "0") int page,
+    public PageResponseDTO<AdminBrandDTO> getBrands(@RequestParam(required = false) String q,
+                                                    @RequestParam(required = false) Boolean active,
+                                                    @RequestParam(defaultValue = "0") int page,
                                                     @RequestParam(defaultValue = "10") int size) {
         PageRequest pageRequest = PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE), Sort.by("name"));
-        return PageResponseDTO.from(brandService.getBrandsPage(pageRequest).map(this::toAdminDTO));
+        return PageResponseDTO.from(brandService.getBrandsPage(q, active, pageRequest).map(this::toAdminDTO));
     }
 
     // POST /api/admin/brands -> 201 Created
