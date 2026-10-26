@@ -13,7 +13,8 @@ public interface BrandService {
     Brand getBrandById(Long id);
 
     // Admin panel
-    Page<Brand> getBrandsPage(Pageable pageable);
+    // BGSI-302: search = name or category, active. null = no filter
+    Page<Brand> getBrandsPage(String search, Boolean active, Pageable pageable);
 
     Brand createBrand(Brand brand);
 

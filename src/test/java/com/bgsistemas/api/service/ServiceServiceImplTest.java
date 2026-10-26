@@ -72,22 +72,22 @@ class ServiceServiceImplTest {
     }
 
     @Test
-    void shouldReturnAllServicesPageWhenNoBrandIsGiven() {
-        when(serviceRepository.findAll(pageRequest)).thenReturn(new PageImpl<>(List.of(), pageRequest, 0));
+    void shouldReturnAllServicesPageWhenThereAreNoFilters() {
+        when(serviceRepository.search(null, null, null, pageRequest)).thenReturn(new PageImpl<>(List.of(), pageRequest, 0));
 
-        serviceService.getServicesPage(null, pageRequest);
+        serviceService.getServicesPage(null, null, null, pageRequest);
 
-        verify(serviceRepository).findAll(pageRequest);
-        verify(serviceRepository, never()).findByBrandId(any(), any());
+        verify(serviceRepository).search(null, null, null, pageRequest);
     }
 
+    // BGSI-302: brand + search box + active
     @Test
-    void shouldFilterServicesPageByBrand() {
-        when(serviceRepository.findByBrandId(5L, pageRequest)).thenReturn(new PageImpl<>(List.of(), pageRequest, 0));
+    void shouldFilterServicesPageByBrandTextAndActive() {
+        when(serviceRepository.search(5L, "%one%", false, pageRequest)).thenReturn(new PageImpl<>(List.of(), pageRequest, 0));
 
-        serviceService.getServicesPage(5L, pageRequest);
+        serviceService.getServicesPage(5L, "One", false, pageRequest);
 
-        verify(serviceRepository).findByBrandId(5L, pageRequest);
+        verify(serviceRepository).search(5L, "%one%", false, pageRequest);
     }
 
     @Test

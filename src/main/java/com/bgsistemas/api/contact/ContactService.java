@@ -8,7 +8,8 @@ public interface ContactService {
     Contact createContact(Contact contact);
 
     // status = null -> all contacts
-    Page<Contact> getContacts(ContactStatus status, Pageable pageable);
+    // BGSI-302: search = text of the search box (name, email or product), null or empty = all
+    Page<Contact> getContacts(ContactStatus status, String search, Pageable pageable);
 
     // Changes the status and/or the note (null = do not change it)
     Contact updateContact(Long id, ContactStatus status, String note);

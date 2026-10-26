@@ -59,7 +59,7 @@ class AdminExportControllerTest {
 
     @Test
     void shouldDownloadTheClientsAsExcel() throws Exception {
-        when(clientService.getClientsPage(any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+        when(clientService.getClientsPage(any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/clients/export").param("format", "xlsx").with(user(admin)))
                 .andExpect(status().isOk())
@@ -70,18 +70,18 @@ class AdminExportControllerTest {
 
     @Test
     void shouldExportEveryRecordAndNotOnlyOnePage() throws Exception {
-        when(clientService.getClientsPage(any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+        when(clientService.getClientsPage(any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/clients/export").param("format", "pdf").with(user(admin)))
                 .andExpect(status().isOk());
 
-        verify(clientService).getClientsPage(org.mockito.ArgumentMatchers.argThat(Pageable::isUnpaged));
+        verify(clientService).getClientsPage(eq(null), eq(null), org.mockito.ArgumentMatchers.argThat(Pageable::isUnpaged));
     }
 
     @Test
     void shouldDownloadTheBrandsAsPdf() throws Exception {
         Brand bdp = new Brand(1L, "BDP", "TPV", "Software", null, true);
-        when(brandService.getBrandsPage(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(bdp)));
+        when(brandService.getBrandsPage(any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(bdp)));
         when(brandService.countServices(1L)).thenReturn(2L);
 
         mockMvc.perform(get("/api/admin/brands/export").param("format", "pdf").with(user(admin)))
@@ -92,13 +92,32 @@ class AdminExportControllerTest {
 
     @Test
     void shouldExportOnlyTheProductsOfTheChosenBrand() throws Exception {
-        when(serviceService.getServicesPage(eq(1L), any(Pageable.class)))
+        when(serviceService.getServicesPage(eq(1L), any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(new Service(2L, "BDP One", "TPV", null))));
 
         mockMvc.perform(get("/api/admin/services/export").param("format", "xlsx").param("brandId", "1").with(user(admin)))
                 .andExpect(status().isOk());
 
-        verify(serviceService).getServicesPage(eq(1L), any(Pageable.class));
+        verify(serviceService).getServicesPage(eq(1L), eq(null), eq(null), any(Pageable.class));
+    }
+
+    // BGSI-302: the export downloads what the table shows, with the same filters
+    @Test
+    void shouldExportWithTheSameSearchAndActiveFilterAsTheTable() throws Exception {
+        when(clientService.getClientsPage(any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+        when(brandService.getBrandsPage(any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+        when(serviceService.getServicesPage(any(), any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/admin/clients/export").param("format", "pdf")
+                .param("q", "plaza").param("active", "true").with(user(admin))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/admin/brands/export").param("format", "pdf")
+                .param("q", "bdp").param("active", "false").with(user(admin))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/admin/services/export").param("format", "xlsx")
+                .param("q", "one").param("active", "true").with(user(admin))).andExpect(status().isOk());
+
+        verify(clientService).getClientsPage(eq("plaza"), eq(true), any(Pageable.class));
+        verify(brandService).getBrandsPage(eq("bdp"), eq(false), any(Pageable.class));
+        verify(serviceService).getServicesPage(eq(null), eq("one"), eq(true), any(Pageable.class));
     }
 
     @Test

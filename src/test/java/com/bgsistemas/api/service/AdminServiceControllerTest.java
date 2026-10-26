@@ -60,7 +60,7 @@ class AdminServiceControllerTest {
 
     @Test
     void shouldReturnServicesPageWithBrand() throws Exception {
-        when(serviceService.getServicesPage(eq(null), any(Pageable.class)))
+        when(serviceService.getServicesPage(eq(null), any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(bdpOne()), PageRequest.of(0, 10), 1));
 
         mockMvc.perform(get("/api/admin/services").with(user(admin)))
@@ -73,13 +73,25 @@ class AdminServiceControllerTest {
 
     @Test
     void shouldPassTheBrandFilter() throws Exception {
-        when(serviceService.getServicesPage(eq(5L), any(Pageable.class)))
+        when(serviceService.getServicesPage(eq(5L), any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
         mockMvc.perform(get("/api/admin/services").with(user(admin)).param("brandId", "5"))
                 .andExpect(status().isOk());
 
-        verify(serviceService).getServicesPage(eq(5L), any(Pageable.class));
+        verify(serviceService).getServicesPage(eq(5L), eq(null), eq(null), any(Pageable.class));
+    }
+
+    // BGSI-302: search box + active, together with the brand
+    @Test
+    void shouldPassTheSearchAndTheActiveFilter() throws Exception {
+        when(serviceService.getServicesPage(any(), any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/admin/services").with(user(admin))
+                        .param("brandId", "5").param("q", "one").param("active", "true"))
+                .andExpect(status().isOk());
+
+        verify(serviceService).getServicesPage(eq(5L), eq("one"), eq(true), any(Pageable.class));
     }
 
     @Test

@@ -149,4 +149,42 @@ class ServiceRepositoryTest {
 
         assertThat(serviceRepository.findVisibleByBrandId(hidden.getId(), PageRequest.of(0, 10))).isEmpty();
     }
+
+    // BGSI-302: admin list with brand + search box (product or brand name) + active
+
+    @Test
+    void shouldSearchProductsByProductOrBrandName() {
+        Brand bdp = brandRepository.save(new Brand(null, "BDP", "Software", "software", null, true));
+        Brand pudu = brandRepository.save(new Brand(null, "PUDU", "Robots", "hardware", null, true));
+        save("BDP One", bdp, false, true);
+        save("BellaBot", pudu, false, true);
+        save("Without brand", null, false, true);
+
+        assertThat(names(serviceRepository.search(null, "%bella%", null, PageRequest.of(0, 10)).getContent()))
+                .containsExactly("BellaBot");
+        assertThat(names(serviceRepository.search(null, "%pudu%", null, PageRequest.of(0, 10)).getContent()))
+                .containsExactly("BellaBot");
+        assertThat(serviceRepository.search(null, null, null, PageRequest.of(0, 10)).getTotalElements()).isEqualTo(3);
+        assertThat(names(serviceRepository.search(bdp.getId(), null, null, PageRequest.of(0, 10)).getContent()))
+                .containsExactly("BDP One");
+    }
+
+    @Test
+    void shouldFilterProductsByActiveTreatingOldRowsAsActive() {
+        Brand bdp = brandRepository.save(new Brand(null, "BDP", "Software", "software", null, true));
+        Service old = save("Old row", bdp, false, true);
+        save("Active", bdp, false, true);
+        save("Inactive", bdp, false, false);
+        entityManager.flush();
+        entityManager
+                .createQuery("UPDATE Service s SET s.active = NULL WHERE s.id = :id")
+                .setParameter("id", old.getId())
+                .executeUpdate();
+        entityManager.clear();
+
+        assertThat(names(serviceRepository.search(null, null, true, PageRequest.of(0, 10)).getContent()))
+                .containsExactlyInAnyOrder("Old row", "Active");
+        assertThat(names(serviceRepository.search(null, null, false, PageRequest.of(0, 10)).getContent()))
+                .containsExactly("Inactive");
+    }
 }

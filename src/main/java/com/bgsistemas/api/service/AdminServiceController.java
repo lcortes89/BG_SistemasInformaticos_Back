@@ -36,14 +36,16 @@ public class AdminServiceController {
         this.serviceMapper = serviceMapper;
     }
 
-    // GET /api/admin/services?brandId=1&page=0&size=10 -> by name
+    // GET /api/admin/services?brandId=1&q=bdp&active=true&page=0&size=10 -> by name (q and active: BGSI-302)
     @GetMapping
     public PageResponseDTO<AdminServiceDTO> getServices(@RequestParam(required = false) Long brandId,
+                                                        @RequestParam(required = false) String q,
+                                                        @RequestParam(required = false) Boolean active,
                                                         @RequestParam(defaultValue = "0") int page,
                                                         @RequestParam(defaultValue = "10") int size) {
         PageRequest pageRequest = PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE), Sort.by("name"));
         return PageResponseDTO.from(
-                serviceService.getServicesPage(brandId, pageRequest).map(serviceMapper::toAdminDTO));
+                serviceService.getServicesPage(brandId, q, active, pageRequest).map(serviceMapper::toAdminDTO));
     }
 
     // POST /api/admin/services -> 201 Created

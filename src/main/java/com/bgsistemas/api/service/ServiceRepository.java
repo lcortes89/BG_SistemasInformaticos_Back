@@ -12,9 +12,6 @@ public interface ServiceRepository extends JpaRepository<Service, Long> {
 
     List<Service> findByBrandId(Long brandId);
 
-    // Same query, one page at a time (admin table filtered by brand)
-    Page<Service> findByBrandId(Long brandId, Pageable pageable);
-
     // SELECT * FROM service WHERE featured = true
     List<Service> findByFeaturedTrue();
 
@@ -35,6 +32,18 @@ public interface ServiceRepository extends JpaRepository<Service, Long> {
             SELECT s FROM Service s JOIN s.brand b
             WHERE b.id = :brandId AND b.active = true AND (s.active IS NULL OR s.active = true)""")
     Page<Service> findVisibleByBrandId(@Param("brandId") Long brandId, Pageable pageable);
+
+    // BGSI-302: admin list with brand + search box (product or brand name) + active (null = active, old rows).
+    // Every parameter can be null = no filter
+    @Query("""
+            SELECT s FROM Service s LEFT JOIN s.brand b
+            WHERE (:brandId IS NULL OR b.id = :brandId)
+              AND (:active IS NULL
+                   OR (:active = true AND (s.active IS NULL OR s.active = true))
+                   OR (:active = false AND s.active = false))
+              AND (:q IS NULL OR LOWER(s.name) LIKE :q ESCAPE '!' OR LOWER(COALESCE(b.name, '')) LIKE :q ESCAPE '!')""")
+    Page<Service> search(@Param("brandId") Long brandId, @Param("q") String q, @Param("active") Boolean active,
+                         Pageable pageable);
 
     // SELECT COUNT(*) FROM service WHERE brand_id = ?
     long countByBrandId(Long brandId);

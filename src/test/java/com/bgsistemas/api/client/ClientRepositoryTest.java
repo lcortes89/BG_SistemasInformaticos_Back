@@ -50,4 +50,30 @@ class ClientRepositoryTest {
         assertThat(firstPage.getTotalElements()).isEqualTo(3);
         assertThat(firstPage.getTotalPages()).isEqualTo(2);
     }
+
+    // BGSI-302: admin list with search box (name or type of business) + active (= published)
+
+    @Test
+    void shouldSearchClientsByNameOrBusinessTypeIgnoringCase() {
+        clientRepository.save(new Client(null, "Bar La Plaza", "Bar", "Great", "logo.png", 5, true));
+        clientRepository.save(new Client(null, "Hotel Mar", "Hotel", "Great", "logo.png", 5, true));
+        clientRepository.save(new Client(null, "Café Central", "Cafeteria", "Great", "logo.png", 4, false));
+
+        assertThat(names(clientRepository.search("%plaza%", null, PageRequest.of(0, 10)))).containsExactly("Bar La Plaza");
+        assertThat(names(clientRepository.search("%hotel%", null, PageRequest.of(0, 10)))).containsExactly("Hotel Mar");
+        assertThat(clientRepository.search(null, null, PageRequest.of(0, 10)).getTotalElements()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldFilterClientsByActive() {
+        clientRepository.save(new Client(null, "Bar La Plaza", "Bar", "Great", "logo.png", 5, true));
+        clientRepository.save(new Client(null, "Bar Draft", "Bar", "Draft", "logo.png", 3, false));
+
+        assertThat(names(clientRepository.search("%bar%", true, PageRequest.of(0, 10)))).containsExactly("Bar La Plaza");
+        assertThat(names(clientRepository.search("%bar%", false, PageRequest.of(0, 10)))).containsExactly("Bar Draft");
+    }
+
+    private List<String> names(Page<Client> page) {
+        return page.getContent().stream().map(Client::getName).toList();
+    }
 }
