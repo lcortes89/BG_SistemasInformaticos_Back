@@ -44,6 +44,34 @@ CORS_ALLOWED_ORIGINS=http://localhost:5173 \
 
 `sslmode=require` encrypts the connection. `DB_SCHEMA=app` keeps our tables out of the `public` schema, which Supabase publishes through its REST API (Data API): only our API can read them.
 
+## 3. Images on Supabase Storage
+
+By default the uploaded images (logos, product photos, hero photo) are saved in the `uploads/` folder of the server. With Supabase Storage they leave the server: Supabase serves them from its CDN and the URL saved in the database (`https://<project-ref>.supabase.co/storage/v1/object/public/images/...`) does not depend on our domain (BGSI-327).
+
+1. In the Supabase project: **Storage** → **New bucket** → name `images`, mark **Public bucket**. Optional: allowed types `image/jpeg, image/png, image/webp` and max size `2 MB` (the API checks it too).
+2. **Project Settings** → **API Keys** → create or copy a **secret key** (`sb_secret_...`; the old `service_role` key also works). It can write in every bucket: it goes only in `.env` / the server variables, never in the front or in Git.
+3. Variables:
+
+| Variable | Value |
+|---|---|
+| `STORAGE_TYPE` | `supabase` (`local` = the `uploads/` folder) |
+| `SUPABASE_URL` | `https://<project-ref>.supabase.co` |
+| `SUPABASE_SERVICE_KEY` | the secret key |
+| `SUPABASE_BUCKET` | `images` (default) |
+
+This also works in development: with these variables in `.env` the local API saves the images on Supabase.
+
+Images saved before the change keep their old URL. Upload them again from the panel to move them to Supabase.
+
+## Nightly cleanups
+
+Two tasks keep only what is still useful (`ExpiredTokenCleanup` and `UnusedImageCleanup`):
+
+| When | What | Property to change it (`-` turns it off) |
+|---|---|---|
+| 03:30 | Deletes the reset, invitation and email change links that expired more than a day ago (BGSI-326) | `app.cleanup.cron` |
+| 03:45 | Deletes the uploaded images older than a day that no brand, client, product or setting uses: old logos, photos of deleted products, images of cancelled forms (BGSI-327) | `app.cleanup.images-cron` |
+
 ## Notes
 
 - Searches ignore upper/lower case in both databases. MySQL also ignores accents (`Cafeteria` finds `Cafetería`); PostgreSQL does not.

@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/admin/uploads")
@@ -22,14 +21,12 @@ public class AdminUploadController {
     }
 
     // POST /api/admin/uploads (multipart/form-data, field "file")
-    // -> 201 { "url": "http://localhost:8080/uploads/3f2a....png" }
+    // -> 201 { "url": "http://localhost:8080/uploads/3f2a....png" } (or the Supabase URL, BGSI-327)
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadResponseDTO> uploadImage(@RequestParam("file") MultipartFile file) {
         String fileName = imageStorageService.store(file);
-        String url = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/uploads/")
-                .path(fileName)
-                .toUriString();
+        // BGSI-327: local -> http://localhost:8080/uploads/x.png; Supabase -> its public URL
+        String url = imageStorageService.publicUrl(fileName);
         return ResponseEntity.status(HttpStatus.CREATED).body(new UploadResponseDTO(url));
     }
 }
