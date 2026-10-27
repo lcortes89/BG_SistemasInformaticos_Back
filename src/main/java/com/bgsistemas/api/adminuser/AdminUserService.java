@@ -60,6 +60,7 @@ public class AdminUserService {
 
     // BGSI-315: one page of admins (the order comes in the pageable).
     // BGSI-302: search = part of the email, status. null = no filter
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public Page<AdminUserDTO> list(String currentEmail, String search, UserStatus status, Pageable pageable) {
         return userRepository.search(Role.ADMIN, SearchText.likePattern(search), status, pageable)
                 .map(user -> toDTO(user, currentEmail));

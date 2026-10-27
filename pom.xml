@@ -43,6 +43,12 @@
 			<artifactId>mysql-connector-j</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- BGSI-328: PostgreSQL (Supabase) for the "prod" profile. MySQL stays for development -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 		<!-- BGSI-252: export to Excel (Apache POI) and PDF (OpenPDF) -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>

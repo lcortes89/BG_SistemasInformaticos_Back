@@ -7,14 +7,18 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 import java.time.Instant;
 
 // BGSI-299: "change my email" link sent to the new address. The email only changes when the link is opened.
 // Like the reset links (BGSI-273), only the SHA-256 hash of the token is saved
 @Entity
+// BGSI-326: the nightly cleanup deletes the old links by their expiry date
+@Table(indexes = @Index(name = "idx_email_change_expires", columnList = "expires_at"))
 public class EmailChangeToken {
 
     @Id

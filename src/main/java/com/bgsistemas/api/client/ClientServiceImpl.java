@@ -5,6 +5,7 @@ import com.bgsistemas.api.globals.SearchText;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class ClientServiceImpl implements ClientService {
@@ -16,16 +17,19 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public Page<Client> getPublishedClients(Pageable pageable) {
         return clientRepository.findByPublishedTrue(pageable);
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public Page<Client> getClientsPage(String search, Boolean active, Pageable pageable) {
         return clientRepository.search(SearchText.likePattern(search), active, pageable);
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public Client getClientById(Long id) {
         return clientRepository.findById(id)
                 .orElseThrow(() -> new ClientNotFoundException(id));

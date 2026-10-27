@@ -7,11 +7,18 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
 @Entity
+// BGSI-326: the admin list filters by status and always sorts by date (newest first)
+@Table(indexes = {
+        @Index(name = "idx_contact_status_created", columnList = "status, created_at"),
+        @Index(name = "idx_contact_created", columnList = "created_at")
+})
 public class Contact {
 
     @Id

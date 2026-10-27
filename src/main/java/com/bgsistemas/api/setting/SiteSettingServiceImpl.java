@@ -1,6 +1,7 @@
 package com.bgsistemas.api.setting;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -16,6 +17,7 @@ public class SiteSettingServiceImpl implements SiteSettingService {
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public Optional<String> getHeroImageUrl() {
         return siteSettingRepository.findById(HERO_IMAGE_KEY).map(SiteSetting::getValue);
     }

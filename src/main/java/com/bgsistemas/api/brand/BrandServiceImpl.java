@@ -7,6 +7,7 @@ import com.bgsistemas.api.service.ServiceRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -22,17 +23,20 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public List<Brand> getActiveBrands() {
         return brandRepository.findByActiveTrue();
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public Brand getBrandById(Long id) {
         return brandRepository.findById(id)
                 .orElseThrow(() -> new BrandNotFoundException(id));
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public Page<Brand> getBrandsPage(String search, Boolean active, Pageable pageable) {
         return brandRepository.search(SearchText.likePattern(search), active, pageable);
     }
@@ -66,6 +70,7 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public long countServices(Long brandId) {
         return serviceRepository.countByBrandId(brandId);
     }

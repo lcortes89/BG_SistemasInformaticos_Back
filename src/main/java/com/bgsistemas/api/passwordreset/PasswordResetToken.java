@@ -7,14 +7,18 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 import java.time.Instant;
 
 // BGSI-273: one "forgot password" link. Only the SHA-256 hash of the token is saved,
 // so even someone who reads the database cannot use the links
 @Entity
+// BGSI-326: the nightly cleanup deletes the old links by their expiry date
+@Table(indexes = @Index(name = "idx_password_reset_expires", columnList = "expires_at"))
 public class PasswordResetToken {
 
     @Id

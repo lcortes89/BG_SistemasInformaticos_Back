@@ -8,6 +8,7 @@ import com.bgsistemas.api.service.exceptions.ServiceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -23,31 +24,37 @@ public class ServiceServiceImpl implements ServiceService {
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public List<Service> getAllServices() {
         return serviceRepository.findVisible();
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public List<Service> getServicesByBrandId(Long brandId) {
         return serviceRepository.findByBrandId(brandId);
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public List<Service> getFeaturedServices() {
         return serviceRepository.findVisibleFeatured();
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public Page<Service> getVisibleServicesPage(Long brandId, Pageable pageable) {
         return serviceRepository.findVisibleByBrandId(brandId, pageable);
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public Page<Service> getServicesPage(Long brandId, String search, Boolean active, Pageable pageable) {
         return serviceRepository.search(brandId, SearchText.likePattern(search), active, pageable);
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public Service getServiceById(Long id) {
         return serviceRepository.findById(id)
                 .orElseThrow(() -> new ServiceNotFoundException(id));
