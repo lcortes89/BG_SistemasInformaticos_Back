@@ -39,10 +39,13 @@ class AdminUploadControllerTest {
     @Test
     void shouldReturnTheUrlOfTheSavedImage() throws Exception {
         when(imageStorageService.store(any())).thenReturn("abc123.png");
+        // BGSI-327: the storage decides the URL (local folder or Supabase)
+        when(imageStorageService.publicUrl("abc123.png"))
+                .thenReturn("https://abc.supabase.co/storage/v1/object/public/images/abc123.png");
 
         mockMvc.perform(multipart("/api/admin/uploads").file(png).with(user(admin)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.url").value("http://localhost/uploads/abc123.png"));
+                .andExpect(jsonPath("$.url").value("https://abc.supabase.co/storage/v1/object/public/images/abc123.png"));
     }
 
     @Test

@@ -34,6 +34,14 @@ app:
     password: ${ADMIN_PASSWORD}
   uploads:
     dir: uploads
+  # BGSI-327: where the uploaded images are saved. "local" = the uploads folder, "supabase" = Supabase Storage
+  storage:
+    type: ${STORAGE_TYPE:local}
+    supabase:
+      url: ${SUPABASE_URL:}
+      # The secret key of the project (sb_secret_...): only in .env, never in the code
+      key: ${SUPABASE_SERVICE_KEY:}
+      bucket: ${SUPABASE_BUCKET:images}
   mail:
     # Who receives the "new contact" emails (the business)
     to: ${MAIL_TO:}
