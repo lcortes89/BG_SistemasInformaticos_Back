@@ -8,6 +8,7 @@ import com.bgsistemas.api.contact.mappers.ContactMapper;
 import com.bgsistemas.api.service.ServiceRepository;
 import com.bgsistemas.api.summary.dtos.SummaryDTO;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class SummaryServiceImpl implements SummaryService {
@@ -30,6 +31,7 @@ public class SummaryServiceImpl implements SummaryService {
 
     // Every number comes from a COUNT query: the rows are never loaded just to count them
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public SummaryDTO getSummary() {
         return new SummaryDTO(
                 contactRepository.countByStatus(ContactStatus.NEW),

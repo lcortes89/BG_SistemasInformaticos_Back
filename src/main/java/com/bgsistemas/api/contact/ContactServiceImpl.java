@@ -6,6 +6,7 @@ import com.bgsistemas.api.notification.NotificationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class ContactServiceImpl implements ContactService {
@@ -31,6 +32,7 @@ public class ContactServiceImpl implements ContactService {
     }
 
     @Override
+    @Transactional(readOnly = true) // BGSI-326: only reads
     public Page<Contact> getContacts(ContactStatus status, String search, Pageable pageable) {
         return contactRepository.search(status, SearchText.likePattern(search), pageable);
     }
