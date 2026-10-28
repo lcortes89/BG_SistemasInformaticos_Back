@@ -1,4 +1,4 @@
-# BG Sistemas Informáticos
+# <img src="src/main/resources/pdf/logo.png" alt="BG Sistemas Informáticos logo" height="48" align="center"> BG Sistemas Informáticos
 
 This is my individual final project for the **Factoría F5 Full Stack Development Bootcamp**.
 
@@ -17,7 +17,7 @@ BG Sistemas Informáticos is a company in Ribadeo (Lugo) that sells and installs
 
 <a id="structure"></a>
 
-## Project Structure
+## 🗂️ Project Structure
 
 The project uses a decoupled architecture, with the frontend and backend maintained in separate repositories. This repository contains the backend: a REST API built with Java 21, Spring Boot 4 and Spring Security.
 
@@ -28,26 +28,26 @@ The project uses a decoupled architecture, with the frontend and backend maintai
 
 <a id="features"></a>
 
-## Features
+## ✨ Features
 
-### Home & Solutions
+### 🏠 Home & Solutions
 
 - Explore the website without an account.
 - Discover the official brands and their products, with a full product sheet and a link to the maker's page.
 - See the featured products on the home page and the hero image chosen by the company.
 
-### Rates Wizard
+### 🧮 Rates Wizard
 
 - Answer step-by-step questions about the business.
 - Get an **estimated monthly price** calculated by the API.
 
-### Clients & Contact
+### ⭐ Clients & Contact
 
 - Read the success stories of the clients, with their testimonial and rating.
 - Send a contact form with the product of interest and the GDPR consent.
 - The company receives an **email** for every new contact.
 
-### Administration Panel
+### 🛠️ Administration Panel
 
 - Access a private panel restricted to administrators.
 - See a summary with counters and the latest contacts.
@@ -58,7 +58,7 @@ The project uses a decoupled architecture, with the frontend and backend maintai
 - Upload images and change the hero image and the notification email.
 - Invite, block, unblock and delete other administrators.
 
-### Security & Account
+### 🔐 Security & Account
 
 - Log in with email and password and receive a **JWT**.
 - Turn on **two-step verification (2FA)** with an authenticator app and recovery codes.
@@ -70,29 +70,31 @@ The project uses a decoupled architecture, with the frontend and backend maintai
 
 <a id="documentation"></a>
 
-## Project Documentation
+## 📖 Project Documentation
 
 The full project documentation is available in the project Wiki:
 
-### [Getting Started](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/Getting-Started)
+### [1. 🏠Home](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki)
 
-### [Analysis and Diagrams](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/Analysis-and-Diagrams)
+### [2. 🚀Getting Started](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/Getting-Started)
 
-### [Architecture](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/Architecture)
+### [3. 📋Project Management & User Stories](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/Project-Management-&-User-Stories)
 
-### [Project Management & User Stories](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/Project-Management-&-User-Stories)
+### [4. 🗺️Analysis and Diagrams](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/Analysis-and-Diagrams)
 
-### [Security](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/Security)
+### [5. 🏛️Architecture](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/Architecture)
 
-### [API Reference](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/API-Reference)
+### [6. 🔐Security](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/Security)
 
-### [Testing](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/Testing)
+### [7. 🔌API Reference](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/API-Reference)
+
+### [8. 🧪Testing](https://github.com/lcortes89/BG_SistemasInformaticos_Back/wiki/Testing)
 
 [← Features](#features) • [↑ Index](#index) • [Author →](#author)
 
 <a id="author"></a>
 
-## Author
+## 👩‍💻 Author
 
 **[Luisa María Cortés](https://github.com/lcortes89)**
 
