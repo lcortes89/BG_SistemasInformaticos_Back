@@ -1,0 +1,18 @@
+# Test configuration: replaces src/main/resources/application.yml during tests.
+# Uses an in-memory H2 database, so Docker/MySQL is not needed to run the tests.
+spring:
+  application:
+    name: api
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  jwt:
+    secret: test-secret-key-only-for-tests-it-must-be-at-least-64-characters-long-0123456789
+    expiration-hours: 1
+  totp:
+    encryption-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+  admin:
+    email: admin@test.com
+    password: test-password

@@ -1,24 +1,31 @@
 package com.bgsistemas.api.brand;
 
-import com.bgsistemas.api.service.ServiceDTO;
-import com.bgsistemas.api.service.ServiceMapper;
+import com.bgsistemas.api.brand.dtos.BrandDTO;
+import com.bgsistemas.api.brand.mappers.BrandMapper;
+import com.bgsistemas.api.globals.PageResponseDTO;
 import com.bgsistemas.api.service.ServiceService;
+import com.bgsistemas.api.service.dtos.ServiceDTO;
+import com.bgsistemas.api.service.mappers.ServiceMapper;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/brands")
 public class BrandController {
 
+    private static final int MAX_PAGE_SIZE = 50;
+
     private final BrandService brandService;
     private final BrandMapper brandMapper;
-    private final ServiceService serviceService;   // NEW
-    private final ServiceMapper serviceMapper;     // NEW
+    private final ServiceService serviceService;
+    private final ServiceMapper serviceMapper;
 
     public BrandController(BrandService brandService, BrandMapper brandMapper,
                            ServiceService serviceService, ServiceMapper serviceMapper) {
@@ -28,18 +35,22 @@ public class BrandController {
         this.serviceMapper = serviceMapper;
     }
 
+    // GET /api/brands -> only active brands (the admin can hide a brand without deleting it)
     @GetMapping
-    public List<BrandDTO> getAllBrands() {
-        return brandService.getAllBrands().stream()
+    public List<BrandDTO> getActiveBrands() {
+        return brandService.getActiveBrands().stream()
                 .map(brandMapper::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    // NEW: GET /api/brands/{id}/services
+    // GET /api/brands/{id}/services?page=0&size=4 -> one page of products (BGSI-246), 404 if the brand does not exist.
+    // Only the active products, and none if the brand is inactive (BGSI-309)
     @GetMapping("/{id}/services")
-    public List<ServiceDTO> getServicesByBrand(@PathVariable Long id) {
-        return serviceService.getServicesByBrandId(id).stream()
-                .map(serviceMapper::toDTO)
-                .collect(Collectors.toList());
+    public PageResponseDTO<ServiceDTO> getServicesByBrand(@PathVariable Long id,
+                                                          @RequestParam(defaultValue = "0") int page,
+                                                          @RequestParam(defaultValue = "4") int size) {
+        brandService.getBrandById(id);
+        PageRequest pageRequest = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE), Sort.by("id"));
+        return PageResponseDTO.from(serviceService.getVisibleServicesPage(id, pageRequest).map(serviceMapper::toDTO));
     }
 }

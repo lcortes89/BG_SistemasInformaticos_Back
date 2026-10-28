@@ -5,3 +5,45 @@ spring:
     name: api
   profiles:
     active: dev
+  servlet:
+    multipart:
+      # Spring's own limit (above ours, so our 2 MB message is the one the user sees)
+      max-file-size: 5MB
+      max-request-size: 5MB
+  # BGSI-120: Gmail SMTP. The password is a Gmail "app password", only in .env
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": true
+      "[mail.smtp.connectiontimeout]": 5000
+      "[mail.smtp.timeout]": 5000
+      "[mail.smtp.writetimeout]": 5000
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-hours: 8
+  # BGSI-276: AES key that encrypts the 2FA secrets (32 bytes in Base64: openssl rand -base64 32)
+  totp:
+    encryption-key: ${TOTP_ENCRYPTION_KEY}
+  admin:
+    email: ${ADMIN_EMAIL}
+    password: ${ADMIN_PASSWORD}
+  uploads:
+    dir: uploads
+  # BGSI-327: where the uploaded images are saved. "local" = the uploads folder, "supabase" = Supabase Storage
+  storage:
+    type: ${STORAGE_TYPE:local}
+    supabase:
+      url: ${SUPABASE_URL:}
+      # The secret key of the project (sb_secret_...): only in .env, never in the code
+      key: ${SUPABASE_SERVICE_KEY:}
+      bucket: ${SUPABASE_BUCKET:images}
+  mail:
+    # Who receives the "new contact" emails (the business)
+    to: ${MAIL_TO:}
+    from: ${MAIL_USERNAME:}
+    panel-url: ${MAIL_PANEL_URL:http://localhost:5173/admin/contactos}

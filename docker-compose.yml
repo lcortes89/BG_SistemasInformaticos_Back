@@ -13,5 +13,22 @@ services:
     volumes:
       - db_data:/var/lib/mysql
 
+  # BGSI-328: PostgreSQL like the one of Supabase, only to try the "prod" profile on this computer.
+  # It does not start with "docker compose up": use "docker compose --profile postgres up -d"
+  postgres:
+    image: postgres:17
+    container_name: bgsistemas-postgres
+    profiles: ["postgres"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bgsistemas
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
 volumes:
   db_data:
+  pg_data:

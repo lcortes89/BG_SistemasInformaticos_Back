@@ -1,4 +1,8 @@
 package com.bgsistemas.api.service;
+import com.bgsistemas.api.service.dtos.ServiceDTO;
+import com.bgsistemas.api.service.mappers.ServiceMapper;
+import com.bgsistemas.api.config.SecurityConfig;
+import org.springframework.context.annotation.Import;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Import(SecurityConfig.class)
 @WebMvcTest(ServiceController.class)
 class ServiceControllerTest {
 
@@ -36,5 +41,20 @@ class ServiceControllerTest {
         mockMvc.perform(get("/api/services"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Web Design"));
+    }
+
+    // NEW: ?featured=true returns only featured services
+    @Test
+    void shouldReturnOnlyFeaturedServicesWhenFilterIsTrue() throws Exception {
+        Service bdpOne = new Service(2L, "BDP One", "Multiplatform version", "bdp-one.jpg");
+        ServiceDTO dto = new ServiceDTO(2L, "BDP One", "Multiplatform version", "bdp-one.jpg");
+
+        when(serviceService.getFeaturedServices()).thenReturn(List.of(bdpOne));
+        when(serviceMapper.toDTO(bdpOne)).thenReturn(dto);
+
+        mockMvc.perform(get("/api/services").param("featured", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("BDP One"));
     }
 }
