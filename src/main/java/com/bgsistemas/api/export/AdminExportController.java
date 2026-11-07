@@ -21,7 +21,10 @@ import java.util.List;
 @RequestMapping("/api/admin")
 public class AdminExportController {
 
-    private static final Pageable ALL_BY_NAME = Pageable.unpaged(Sort.by("name"));
+    // One sort per entity: type-safe property paths (Brand::getName) instead of strings
+    private static final Pageable CLIENTS_BY_NAME = Pageable.unpaged(Sort.by(Client::getName));
+    private static final Pageable BRANDS_BY_NAME = Pageable.unpaged(Sort.by(Brand::getName));
+    private static final Pageable SERVICES_BY_NAME = Pageable.unpaged(Sort.by(Service::getName));
 
     private final ClientService clientService;
     private final BrandService brandService;
@@ -42,7 +45,7 @@ public class AdminExportController {
                                                 @RequestParam(required = false) String q,
                                                 @RequestParam(required = false) Boolean active) {
         ExportFormat exportFormat = ExportFormat.from(format); // first: a wrong format is a 400
-        List<List<String>> rows = clientService.getClientsPage(q, active, ALL_BY_NAME).stream()
+        List<List<String>> rows = clientService.getClientsPage(q, active, CLIENTS_BY_NAME).stream()
                 .map(this::clientRow)
                 .toList();
         ExportTable table = new ExportTable("Clientes",
@@ -56,7 +59,7 @@ public class AdminExportController {
                                                @RequestParam(required = false) String q,
                                                @RequestParam(required = false) Boolean active) {
         ExportFormat exportFormat = ExportFormat.from(format); // first: a wrong format is a 400
-        List<List<String>> rows = brandService.getBrandsPage(q, active, ALL_BY_NAME).stream()
+        List<List<String>> rows = brandService.getBrandsPage(q, active, BRANDS_BY_NAME).stream()
                 .map(this::brandRow)
                 .toList();
         ExportTable table = new ExportTable("Marcas",
@@ -71,7 +74,7 @@ public class AdminExportController {
                                                  @RequestParam(required = false) String q,
                                                  @RequestParam(required = false) Boolean active) {
         ExportFormat exportFormat = ExportFormat.from(format); // first: a wrong format is a 400
-        List<List<String>> rows = serviceService.getServicesPage(brandId, q, active, ALL_BY_NAME).stream()
+        List<List<String>> rows = serviceService.getServicesPage(brandId, q, active, SERVICES_BY_NAME).stream()
                 .map(this::serviceRow)
                 .toList();
         ExportTable table = new ExportTable("Productos",

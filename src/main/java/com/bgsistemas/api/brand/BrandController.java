@@ -1,4 +1,5 @@
 package com.bgsistemas.api.brand;
+import com.bgsistemas.api.service.Service;
 
 import com.bgsistemas.api.brand.dtos.BrandDTO;
 import com.bgsistemas.api.brand.mappers.BrandMapper;
@@ -50,7 +51,7 @@ public class BrandController {
                                                           @RequestParam(defaultValue = "0") int page,
                                                           @RequestParam(defaultValue = "4") int size) {
         brandService.getBrandById(id);
-        PageRequest pageRequest = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE), Sort.by("id"));
+        PageRequest pageRequest = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE), Sort.by(Service::getId));
         return PageResponseDTO.from(serviceService.getVisibleServicesPage(id, pageRequest).map(serviceMapper::toDTO));
     }
 }

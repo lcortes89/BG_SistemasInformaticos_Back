@@ -42,7 +42,7 @@ public class AdminBrandController {
                                                     @RequestParam(required = false) Boolean active,
                                                     @RequestParam(defaultValue = "0") int page,
                                                     @RequestParam(defaultValue = "10") int size) {
-        PageRequest pageRequest = PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE), Sort.by("name"));
+        PageRequest pageRequest = PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE), Sort.by(Brand::getName));
         return PageResponseDTO.from(brandService.getBrandsPage(q, active, pageRequest).map(this::toAdminDTO));
     }
 
