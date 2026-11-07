@@ -28,7 +28,7 @@ public class ClientController {
     @GetMapping
     public PageResponseDTO<ClientDTO> getPublishedClients(@RequestParam(defaultValue = "0") int page,
                                                           @RequestParam(defaultValue = "6") int size) {
-        PageRequest pageRequest = PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE), Sort.by("id"));
+        PageRequest pageRequest = PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE), Sort.by(Client::getId));
         return PageResponseDTO.from(
                 clientService.getPublishedClients(pageRequest).map(clientMapper::toDTO));
     }

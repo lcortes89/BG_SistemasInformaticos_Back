@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 // Only ADMIN (SecurityConfig protects /api/admin/**)
 @RestController
-@RequestMapping("/api/admin/settings")
+@RequestMapping("/api/admin/settings/hero")
 public class AdminSettingController {
 
     private final SiteSettingService siteSettingService;
@@ -22,13 +22,13 @@ public class AdminSettingController {
     }
 
     // PUT /api/admin/settings/hero { "imageUrl": "http://..." } -> the new photo
-    @PutMapping("/hero")
+    @PutMapping
     public HeroImageDTO updateHeroImage(@Valid @RequestBody HeroImageRequestDTO request) {
         return new HeroImageDTO(siteSettingService.updateHeroImageUrl(request.imageUrl()));
     }
 
     // DELETE /api/admin/settings/hero -> 204, back to the default photo
-    @DeleteMapping("/hero")
+    @DeleteMapping
     public ResponseEntity<Void> resetHeroImage() {
         siteSettingService.resetHeroImage();
         return ResponseEntity.noContent().build();
