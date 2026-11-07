@@ -7,9 +7,11 @@ import com.bgsistemas.api.auth.exceptions.EmailAlreadyExistsException;
 import com.bgsistemas.api.twofactor.PendingLoginService;
 import com.bgsistemas.api.user.Role;
 import com.bgsistemas.api.user.User;
+import com.bgsistemas.api.user.UserStatus;
 import com.bgsistemas.api.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -80,6 +82,20 @@ class AuthServiceImplTest {
         assertThat(response.email()).isEqualTo("new@mail.com");
         assertThat(response.role()).isEqualTo("ADMIN");
         verify(passwordEncoder).encode("password123");
+    }
+
+    // BGSI-238: a new admin cannot log in until the email is verified
+    @Test
+    void shouldRegisterNewAdminAsPendingUntilEmailIsVerified() {
+        when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("hashed-password");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        authService.register(new RegisterRequestDTO("new@mail.com", "password123"));
+
+        ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(saved.capture());
+        assertThat(saved.getValue().getStatus()).isEqualTo(UserStatus.PENDING);
     }
 
     @Test

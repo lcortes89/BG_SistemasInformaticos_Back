@@ -8,6 +8,7 @@ import com.bgsistemas.api.twofactor.PendingLoginService;
 import com.bgsistemas.api.user.Role;
 import com.bgsistemas.api.user.User;
 import com.bgsistemas.api.user.UserRepository;
+import com.bgsistemas.api.user.UserStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -50,6 +51,7 @@ public class AuthServiceImpl implements AuthService {
             throw new EmailAlreadyExistsException(request.email());
         }
         User user = new User(request.email(), passwordEncoder.encode(request.password()), Role.ADMIN);
+        user.setStatus(UserStatus.PENDING); // BGSI-238: cannot log in until the email is verified
         User saved = userRepository.save(user);
         return new RegisterResponseDTO(saved.getId(), saved.getEmail(), saved.getRole().name());
     }
