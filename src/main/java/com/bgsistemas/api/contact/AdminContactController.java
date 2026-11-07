@@ -39,7 +39,7 @@ public class AdminContactController {
                                                            @RequestParam(defaultValue = "0") int page,
                                                            @RequestParam(defaultValue = "10") int size) {
         PageRequest pageRequest = PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE),
-                Sort.by(Sort.Direction.DESC, "createdAt"));
+                Sort.by(Contact::getCreatedAt).descending());
         return PageResponseDTO.from(
                 contactService.getContacts(status, q, pageRequest).map(contactMapper::toResponse));
     }

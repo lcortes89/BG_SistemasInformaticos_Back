@@ -1,5 +1,4 @@
 package com.bgsistemas.api.config;
-import com.bgsistemas.api.config.SecurityConfig;
 import org.springframework.context.annotation.Import;
 
 import com.bgsistemas.api.service.ServiceController;

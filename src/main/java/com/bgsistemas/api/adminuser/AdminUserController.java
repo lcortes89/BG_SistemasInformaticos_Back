@@ -1,4 +1,5 @@
 package com.bgsistemas.api.adminuser;
+import com.bgsistemas.api.user.User;
 
 import com.bgsistemas.api.adminuser.dtos.AdminEmailRequestDTO;
 import com.bgsistemas.api.adminuser.dtos.AdminUserDTO;
@@ -42,7 +43,7 @@ public class AdminUserController {
                                               @RequestParam(defaultValue = "0") int page,
                                               @RequestParam(defaultValue = "5") int size,
                                               Authentication authentication) {
-        PageRequest pageRequest = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE), Sort.by("email"));
+        PageRequest pageRequest = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE), Sort.by(User::getEmail));
         return PageResponseDTO.from(adminUserService.list(authentication.getName(), q, status, pageRequest));
     }
 
