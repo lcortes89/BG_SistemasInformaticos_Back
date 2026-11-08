@@ -9,8 +9,10 @@ import com.bgsistemas.api.user.Role;
 import com.bgsistemas.api.user.User;
 import com.bgsistemas.api.user.UserRepository;
 import com.bgsistemas.api.user.UserStatus;
+import com.bgsistemas.api.verification.VerificationService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
@@ -21,13 +23,15 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final PendingLoginService pendingLogins;
+    private final VerificationService verificationService;
 
     public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,
-                           PendingLoginService pendingLogins) {
+                           PendingLoginService pendingLogins, VerificationService verificationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.pendingLogins = pendingLogins;
+        this.verificationService = verificationService;
     }
 
     // The user arrives already authenticated (HTTP Basic): we only issue the token.
@@ -46,6 +50,7 @@ public class AuthServiceImpl implements AuthService {
 
     // Only reachable by an ADMIN (see SecurityConfig): creates another admin
     @Override
+    @Transactional
     public RegisterResponseDTO register(RegisterRequestDTO request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException(request.email());
@@ -53,6 +58,7 @@ public class AuthServiceImpl implements AuthService {
         User user = new User(request.email(), passwordEncoder.encode(request.password()), Role.ADMIN);
         user.setStatus(UserStatus.PENDING); // BGSI-238: cannot log in until the email is verified
         User saved = userRepository.save(user);
+        verificationService.sendVerification(saved); // BGSI-238: email with the link to verify the address
         return new RegisterResponseDTO(saved.getId(), saved.getEmail(), saved.getRole().name());
     }
 }

@@ -9,6 +9,7 @@ import com.bgsistemas.api.user.Role;
 import com.bgsistemas.api.user.User;
 import com.bgsistemas.api.user.UserStatus;
 import com.bgsistemas.api.user.UserRepository;
+import com.bgsistemas.api.verification.VerificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +40,9 @@ class AuthServiceImplTest {
 
     @Mock
     private PendingLoginService pendingLogins;
+
+    @Mock
+    private VerificationService verificationService;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -98,6 +102,20 @@ class AuthServiceImplTest {
         assertThat(saved.getValue().getStatus()).isEqualTo(UserStatus.PENDING);
     }
 
+    // BGSI-238: the new admin gets the email with the link to verify the address
+    @Test
+    void shouldSendTheVerificationEmailToTheNewAdmin() {
+        when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("hashed-password");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        authService.register(new RegisterRequestDTO("new@mail.com", "password123"));
+
+        ArgumentCaptor<User> sentTo = ArgumentCaptor.forClass(User.class);
+        verify(verificationService).sendVerification(sentTo.capture());
+        assertThat(sentTo.getValue().getEmail()).isEqualTo("new@mail.com");
+    }
+
     @Test
     void shouldRejectDuplicateEmail() {
         when(userRepository.existsByEmail("admin@mail.com")).thenReturn(true);
@@ -106,5 +124,6 @@ class AuthServiceImplTest {
                 .isInstanceOf(EmailAlreadyExistsException.class);
 
         verify(userRepository, never()).save(any());
+        verify(verificationService, never()).sendVerification(any()); // no email if the admin was not created
     }
 }
