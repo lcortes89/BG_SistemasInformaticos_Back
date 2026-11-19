@@ -17,6 +17,7 @@ import java.time.Instant;
 public class VerificationService {
 
     static final Duration LINK_VALIDITY = Duration.ofHours(24);
+    static final long MAX_VALID_LINKS = 3;
 
     private final VerificationTokenRepository tokenRepository;
     private final PasswordResetEmailSender emailSender;
@@ -51,5 +52,16 @@ public class VerificationService {
         user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
         verificationToken.markUsed(now); // single use
+    }
+
+    // BGSI-238: the page of an expired link sends its old token to get a new one.
+    // Always the same answer (no error), so nobody can find out which accounts exist
+    @Transactional
+    public void resendVerification(String oldToken) {
+        tokenRepository.findByTokenHash(PasswordResetServiceImpl.hash(oldToken))
+                .map(VerificationToken::getUser)
+                .filter(user -> user.getStatus() == UserStatus.PENDING) // active or blocked: nothing to send
+                .filter(user -> tokenRepository.countByUserAndExpiresAtAfter(user, Instant.now()) < MAX_VALID_LINKS)
+                .ifPresent(this::sendVerification);
     }
 }

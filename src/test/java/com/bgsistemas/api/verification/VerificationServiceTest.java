@@ -115,4 +115,47 @@ class VerificationServiceTest {
         assertThat(admin.getStatus()).isEqualTo(UserStatus.BLOCKED);
         verify(userRepository, never()).save(any());
     }
+
+        // ---------- resend ----------
+
+    @Test
+    void anExpiredLinkOfAPendingAdminSendsANewOne() {
+        admin.setStatus(UserStatus.PENDING);
+        tokenFor("old-token", Instant.now().minus(Duration.ofMinutes(1)));
+
+        service.resendVerification("old-token");
+
+        verify(emailSender).sendEmailVerification(eq(EMAIL), anyString());
+        verify(tokenRepository).save(any(VerificationToken.class));
+    }
+
+    @Test
+    void anActiveOrBlockedAdminGetsNoNewLink() {
+        admin.setStatus(UserStatus.ACTIVE);
+        tokenFor("used-token", Instant.now().plus(Duration.ofHours(1)));
+
+        service.resendVerification("used-token");
+
+        verify(emailSender, never()).sendEmailVerification(anyString(), anyString());
+    }
+
+    @Test
+    void anUnknownLinkSendsNothingAndGivesNoError() {
+        when(tokenRepository.findByTokenHash(anyString())).thenReturn(Optional.empty());
+
+        service.resendVerification("wrong");
+
+        verify(emailSender, never()).sendEmailVerification(anyString(), anyString());
+    }
+
+    @Test
+    void noMoreLinksAreSentWhenThreeAreStillValid() {
+        admin.setStatus(UserStatus.PENDING);
+        tokenFor("old-token", Instant.now().minus(Duration.ofMinutes(1)));
+        when(tokenRepository.countByUserAndExpiresAtAfter(eq(admin), any(Instant.class))).thenReturn(3L);
+
+        service.resendVerification("old-token");
+
+        verify(emailSender, never()).sendEmailVerification(anyString(), anyString());
+    }
 }
