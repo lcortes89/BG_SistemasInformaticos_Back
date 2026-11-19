@@ -50,4 +50,20 @@ class VerificationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{ \"token\": \"\" }"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void resendingWorksWithoutASessionAndAlwaysGives202() throws Exception {
+        mockMvc.perform(post("/api/auth/verify-email/resend")
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"token\": \"old\" }"))
+                .andExpect(status().isAccepted());
+
+        verify(verificationService).resendVerification("old");
+    }
+
+    @Test
+    void resendingWithoutTokenIs400() throws Exception {
+        mockMvc.perform(post("/api/auth/verify-email/resend")
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"token\": \"\" }"))
+                .andExpect(status().isBadRequest());
+    }
 }

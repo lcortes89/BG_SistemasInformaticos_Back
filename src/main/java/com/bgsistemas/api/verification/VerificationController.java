@@ -26,4 +26,12 @@ public class VerificationController {
         verificationService.verifyEmail(request.token());
         return ResponseEntity.noContent().build();
     }
+
+    // BGSI-238: POST /api/auth/verify-email/resend { token } (the old link) -> always 202,
+    // whether a new email is sent or not, so nobody can find out which accounts exist
+    @PostMapping("/verify-email/resend")
+    public ResponseEntity<Void> resendVerification(@Valid @RequestBody VerifyEmailRequestDTO request) {
+        verificationService.resendVerification(request.token());
+        return ResponseEntity.accepted().build();
+    }
 }
