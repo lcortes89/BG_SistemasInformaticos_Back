@@ -34,6 +34,7 @@ public class PasswordResetEmailSender {
     static final String NOTICE_SUBJECT = "Cambio en los administradores · Panel de BG Sistemas";
     static final String EMAIL_CHANGE_SUBJECT = "Confirma tu nuevo email · Panel de BG Sistemas";
     static final String EMAIL_CHANGE_REQUESTED_SUBJECT = "Aviso de seguridad: cambio de email · Panel de BG Sistemas";
+    static final String EMAIL_VERIFICATION_SUBJECT = "Confirma tu email · Panel de BG Sistemas";
 
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
     private final MailSettingsService mailSettingsService;
@@ -42,6 +43,9 @@ public class PasswordResetEmailSender {
     // BGSI-299: page of the front that opens the "confirm your new email" link
     @Value("${app.email-change.url:http://localhost:5173/admin/confirmar-email}")
     private String emailChangeUrl = "http://localhost:5173/admin/confirmar-email";
+    // BGSI-238: page of the front that opens the "verify your email" link
+    @Value("${app.email-verification.url:http://localhost:5173/admin/verificar-email}")
+    private String emailVerificationUrl = "http://localhost:5173/admin/verificar-email";
 
     public PasswordResetEmailSender(ObjectProvider<JavaMailSender> mailSenderProvider,
                                     MailSettingsService mailSettingsService,
@@ -103,6 +107,17 @@ public class PasswordResetEmailSender {
     public void sendEmailChangeRequested(String oldEmail, String newEmail) {
         deliver(new String[] {oldEmail}, EMAIL_CHANGE_REQUESTED_SUBJECT,
                 emailChangeRequestedText(newEmail), emailChangeRequestedHtml(newEmail));
+    }
+
+    // BGSI-238: the new admin proves the address is theirs
+    String emailVerificationLink(String token) {
+        return emailVerificationUrl + "?token=" + token;
+    }
+
+    @Async
+    public void sendEmailVerification(String to, String token) {
+        String link = emailVerificationLink(token);
+        deliver(new String[] {to}, EMAIL_VERIFICATION_SUBJECT, emailVerificationText(link), emailVerificationHtml(link));
     }
 
     private void deliver(String[] to, String subject, String text, String html) {
@@ -238,6 +253,28 @@ public class PasswordResetEmailSender {
                 <p style="margin:0 0 16px;font-size:14px;line-height:1.5;">Alguien ha pedido cambiar el email de tu cuenta del panel por <strong>%s</strong>. El cambio solo se hará si se confirma desde esa dirección.</p>
                 <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">Si no has sido tú, entra en el panel, cancela el cambio en "Mi cuenta" y cambia tu contraseña.</p>
                 """.formatted(HtmlUtils.htmlEscape(newEmail, "UTF-8")));
+    }
+
+        static String emailVerificationText(String link) {
+        return """
+                Se ha creado una cuenta de administrador del panel de BG Sistemas con esta dirección.
+
+                Confirma que el email es tuyo con este enlace (válido 24 horas y de un solo uso):
+                %s
+
+                Si no esperabas este correo, ignóralo: la cuenta no se podrá usar.
+                """.formatted(link);
+    }
+
+    static String emailVerificationHtml(String link) {
+        return frame("""
+                <h1 style="margin:0 0 12px;font-size:19px;color:#0b1f3a;">Confirma tu email</h1>
+                <p style="margin:0 0 16px;font-size:14px;line-height:1.5;">Se ha creado una cuenta de administrador del panel con esta dirección. Pulsa el botón para confirmar que es tuya.</p>
+                <p style="margin:0 0 16px;">
+                  <a href="%s" style="display:inline-block;padding:10px 16px;background:#f28c28;color:#ffffff;border-radius:6px;font-weight:bold;text-decoration:none;">Confirmar mi email</a>
+                </p>
+                <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">El enlace es válido <strong>24 horas</strong> y solo se puede usar una vez.<br>Si no esperabas este correo, ignóralo: la cuenta no se podrá usar.</p>
+                """.formatted(link));
     }
 
     static String html(String link) {
