@@ -58,11 +58,18 @@ public class TwoFactorService {
         if (user.isTotpEnabled()) {
             throw new ResourceConflictException("Two-factor authentication is already on");
         }
-        String secret = totp.newSecret();
-        user.setTotpSecret(cipher.encrypt(secret));
-        user.setTotpLastStep(null);
+        // BGSI-337: a pending secret (set up but not confirmed yet) is shown again, so the app does not get a new entry.
+        // disable() deletes the secret, so a secret that was active is never used again
+        if (user.getTotpSecret() == null) {
+            user.setTotpSecret(cipher.encrypt(totp.newSecret()));
+            user.setTotpLastStep(null);
+            user.setTotpSecretCreatedAt(LocalDate.now());
+        } else if (user.getTotpSecretCreatedAt() == null) {
+            user.setTotpSecretCreatedAt(LocalDate.now()); // pending secrets saved before BGSI-337
+        }
         userRepository.save(user);
-        return new Setup(secret, totp.otpauthUri(secret, user.getEmail(), LocalDate.now()));
+        String secret = cipher.decrypt(user.getTotpSecret());
+        return new Setup(secret, totp.otpauthUri(secret, user.getEmail(), user.getTotpSecretCreatedAt()));
     }
 
     // Step 2: the first code proves the app works. Returns the 10 recovery codes (shown only this time)
@@ -91,6 +98,7 @@ public class TwoFactorService {
         User user = find(email);
         user.setTotpEnabled(false);
         user.setTotpSecret(null);
+        user.setTotpSecretCreatedAt(null);
         user.setTotpLastStep(null);
         userRepository.save(user);
         recoveryCodeRepository.deleteByUser(user);
