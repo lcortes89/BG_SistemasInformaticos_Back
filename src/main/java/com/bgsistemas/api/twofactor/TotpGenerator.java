@@ -69,6 +69,13 @@ public class TotpGenerator {
         return OptionalLong.empty();
     }
 
+    // BGSI-337: the name the admin sees in the app ("BG Sistemas · email · dd/mm/yy"), to know which entry to delete.
+    // Secrets set up before BGSI-337 have no date
+    public String entryName(String email, LocalDate date) {
+        String name = ISSUER + " \u00B7 " + email;
+        return date == null ? name : name + " \u00B7 " + date.format(LABEL_DATE);
+    }
+
     // What the QR code contains: the app reads the issuer, the account and the secret
     public String otpauthUri(String secret, String email, LocalDate date) {
         String label = encode(ISSUER + ":" + email + " \u00B7 " + date.format(LABEL_DATE));

@@ -36,12 +36,13 @@ class TwoFactorControllerTest {
 
     @Test
     void returnsTheStatus() throws Exception {
-        when(twoFactorService.status("luisa@bg.es")).thenReturn(new TwoFactorService.Status(true, 7));
+        when(twoFactorService.status("luisa@bg.es")).thenReturn(new TwoFactorService.Status(true, 7, "BG Sistemas \u00B7 luisa@bg.es \u00B7 22/11/26"));
 
         mockMvc.perform(get("/api/admin/account/2fa").with(user(admin)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(true))
-                .andExpect(jsonPath("$.recoveryCodesLeft").value(7));
+                .andExpect(jsonPath("$.recoveryCodesLeft").value(7))
+                .andExpect(jsonPath("$.entryName").value("BG Sistemas \u00B7 luisa@bg.es \u00B7 22/11/26"));
     }
 
     @Test

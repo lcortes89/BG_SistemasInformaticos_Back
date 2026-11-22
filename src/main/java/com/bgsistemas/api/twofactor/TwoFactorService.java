@@ -40,7 +40,7 @@ public class TwoFactorService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public record Status(boolean enabled, long recoveryCodesLeft) {
+    public record Status(boolean enabled, long recoveryCodesLeft, String entryName) {
     }
 
     public record Setup(String secret, String otpauthUri) {
@@ -49,7 +49,8 @@ public class TwoFactorService {
     public Status status(String email) {
         User user = find(email);
         long left = user.isTotpEnabled() ? recoveryCodeRepository.countByUserAndUsedAtIsNull(user) : 0;
-        return new Status(user.isTotpEnabled(), left);
+        String entryName = user.isTotpEnabled() ? totp.entryName(user.getEmail(), user.getTotpSecretCreatedAt()) : null;
+        return new Status(user.isTotpEnabled(), left, entryName);
     }
 
     // Step 1: a new secret for the QR. It is saved but not active until a code confirms it (enable)

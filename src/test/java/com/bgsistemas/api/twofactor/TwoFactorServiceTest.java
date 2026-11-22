@@ -138,12 +138,13 @@ class TwoFactorServiceTest {
 
     @Test
     void statusSaysIfItIsOnAndHowManyRecoveryCodesAreLeft() {
-        assertThat(service.status("luisa@bg.es")).isEqualTo(new TwoFactorService.Status(false, 0));
+        assertThat(service.status("luisa@bg.es")).isEqualTo(new TwoFactorService.Status(false, 0, null));
 
         turnOn();
         when(recoveryCodeRepository.countByUserAndUsedAtIsNull(admin)).thenReturn(9L);
 
-        assertThat(service.status("luisa@bg.es")).isEqualTo(new TwoFactorService.Status(true, 9));
+        assertThat(service.status("luisa@bg.es")).isEqualTo(new TwoFactorService.Status(true, 9,
+                "BG Sistemas \u00B7 luisa@bg.es \u00B7 " + LocalDate.now().format(TotpGenerator.LABEL_DATE)));
     }
 
     @Test
