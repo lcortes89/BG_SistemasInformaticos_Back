@@ -26,11 +26,11 @@ public class TwoFactorController {
         this.twoFactorService = twoFactorService;
     }
 
-    // GET -> { enabled, recoveryCodesLeft }
+    // GET -> { enabled, recoveryCodesLeft, entryName }
     @GetMapping
     public TwoFactorStatusDTO status(Authentication authentication) {
         TwoFactorService.Status status = twoFactorService.status(authentication.getName());
-        return new TwoFactorStatusDTO(status.enabled(), status.recoveryCodesLeft());
+        return new TwoFactorStatusDTO(status.enabled(), status.recoveryCodesLeft(), status.entryName());
     }
 
     // POST /setup -> { secret, otpauthUri } (409 if it is already on)

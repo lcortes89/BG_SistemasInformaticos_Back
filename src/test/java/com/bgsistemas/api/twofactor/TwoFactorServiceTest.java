@@ -10,6 +10,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -137,12 +138,13 @@ class TwoFactorServiceTest {
 
     @Test
     void statusSaysIfItIsOnAndHowManyRecoveryCodesAreLeft() {
-        assertThat(service.status("luisa@bg.es")).isEqualTo(new TwoFactorService.Status(false, 0));
+        assertThat(service.status("luisa@bg.es")).isEqualTo(new TwoFactorService.Status(false, 0, null));
 
         turnOn();
         when(recoveryCodeRepository.countByUserAndUsedAtIsNull(admin)).thenReturn(9L);
 
-        assertThat(service.status("luisa@bg.es")).isEqualTo(new TwoFactorService.Status(true, 9));
+        assertThat(service.status("luisa@bg.es")).isEqualTo(new TwoFactorService.Status(true, 9,
+                "BG Sistemas \u00B7 luisa@bg.es \u00B7 " + LocalDate.now().format(TotpGenerator.LABEL_DATE)));
     }
 
     @Test
@@ -154,5 +156,48 @@ class TwoFactorServiceTest {
         assertThat(admin.isTotpEnabled()).isFalse();
         assertThat(admin.getTotpSecret()).isNull();
         verify(recoveryCodeRepository, org.mockito.Mockito.times(2)).deleteByUser(admin);
+    }
+
+    // BGSI-337: going back to the set up screen without confirming shows the same QR (no new entry in the app)
+    @Test
+    void setupAgainWithoutConfirmingGivesTheSameQr() {
+        TwoFactorService.Setup first = service.setup("luisa@bg.es");
+
+        TwoFactorService.Setup second = service.setup("luisa@bg.es");
+
+        assertThat(second.secret()).isEqualTo(first.secret());
+        assertThat(second.otpauthUri()).isEqualTo(first.otpauthUri());
+    }
+
+    // BGSI-337: the date in the name is the day of the first set up, even if the QR is shown again another day
+    @Test
+    void thePendingQrKeepsTheDateOfTheFirstSetup() {
+        service.setup("luisa@bg.es");
+        admin.setTotpSecretCreatedAt(LocalDate.of(2026, 11, 1));
+
+        TwoFactorService.Setup again = service.setup("luisa@bg.es");
+
+        assertThat(again.otpauthUri()).contains("%2001%2F11%2F26?secret=");
+    }
+
+    // BGSI-337: a secret that was active is never used again (the phone could be lost or the QR exposed)
+    @Test
+    void afterTurningItOffTheNextSetupGivesANewSecret() {
+        turnOn();
+        String oldSecret = secretOf(admin);
+        service.disable("luisa@bg.es");
+
+        TwoFactorService.Setup next = service.setup("luisa@bg.es");
+
+        assertThat(next.secret()).isNotEqualTo(oldSecret);
+    }
+
+    @Test
+    void disableAlsoForgetsTheDateOfTheSecret() {
+        turnOn();
+
+        service.disable("luisa@bg.es");
+
+        assertThat(admin.getTotpSecretCreatedAt()).isNull();
     }
 }

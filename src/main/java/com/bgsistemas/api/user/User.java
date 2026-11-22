@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "users") // "user" is a reserved word in some databases
@@ -39,6 +40,8 @@ public class User {
     private Boolean totpEnabled;
     // Last 30-second step used: the same code cannot be used twice
     private Long totpLastStep;
+    // BGSI-337: day of the set up, shown in the name of the entry in the app (null = no secret)
+    private LocalDate totpSecretCreatedAt;
 
     // BGSI-277: null = ACTIVE (the admins created before this column existed)
     @Enumerated(EnumType.STRING)
@@ -69,6 +72,8 @@ public class User {
     public void setTotpEnabled(boolean totpEnabled) { this.totpEnabled = totpEnabled; }
     public Long getTotpLastStep() { return totpLastStep; }
     public void setTotpLastStep(Long totpLastStep) { this.totpLastStep = totpLastStep; }
+    public LocalDate getTotpSecretCreatedAt() { return totpSecretCreatedAt; }
+    public void setTotpSecretCreatedAt(LocalDate totpSecretCreatedAt) { this.totpSecretCreatedAt = totpSecretCreatedAt; }
     public UserStatus getStatus() { return status == null ? UserStatus.ACTIVE : status; }
     public void setStatus(UserStatus status) { this.status = status; }
     public boolean isActive() { return getStatus() == UserStatus.ACTIVE; }

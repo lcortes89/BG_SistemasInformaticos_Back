@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,10 +58,22 @@ class TotpGeneratorTest {
     }
 
     @Test
-    void theQrTextHasTheIssuerTheAccountAndTheSecret() {
-        String uri = totp.otpauthUri("ABCDEF", "luisa@bg.es");
+    void theQrTextHasTheIssuerTheAccountWithTheDateAndTheSecret() {
+        String uri = totp.otpauthUri("ABCDEF", "luisa@bg.es", LocalDate.of(2026, 11, 22));
 
-        assertThat(uri).startsWith("otpauth://totp/BG%20Sistemas%3Aluisa%40bg.es?secret=ABCDEF&issuer=BG%20Sistemas")
+        assertThat(uri).startsWith("otpauth://totp/BG%20Sistemas%3Aluisa%40bg.es%20%C2%B7%2022%2F11%2F26?secret=ABCDEF&issuer=BG%20Sistemas")
                 .contains("digits=6").contains("period=30");
+    }
+
+    // BGSI-337: the name the admin sees in the app, to know which entry to delete
+    @Test
+    void theEntryNameHasTheIssuerTheEmailAndTheDate() {
+        assertThat(totp.entryName("luisa@bg.es", LocalDate.of(2026, 11, 22)))
+                .isEqualTo("BG Sistemas \u00B7 luisa@bg.es \u00B7 22/11/26");
+    }
+
+    @Test
+    void theEntryNameOfAnOldSecretHasNoDate() {
+        assertThat(totp.entryName("luisa@bg.es", null)).isEqualTo("BG Sistemas \u00B7 luisa@bg.es");
     }
 }

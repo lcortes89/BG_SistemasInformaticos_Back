@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -39,7 +40,7 @@ public class TwoFactorService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public record Status(boolean enabled, long recoveryCodesLeft) {
+    public record Status(boolean enabled, long recoveryCodesLeft, String entryName) {
     }
 
     public record Setup(String secret, String otpauthUri) {
@@ -48,7 +49,8 @@ public class TwoFactorService {
     public Status status(String email) {
         User user = find(email);
         long left = user.isTotpEnabled() ? recoveryCodeRepository.countByUserAndUsedAtIsNull(user) : 0;
-        return new Status(user.isTotpEnabled(), left);
+        String entryName = user.isTotpEnabled() ? totp.entryName(user.getEmail(), user.getTotpSecretCreatedAt()) : null;
+        return new Status(user.isTotpEnabled(), left, entryName);
     }
 
     // Step 1: a new secret for the QR. It is saved but not active until a code confirms it (enable)
@@ -57,11 +59,18 @@ public class TwoFactorService {
         if (user.isTotpEnabled()) {
             throw new ResourceConflictException("Two-factor authentication is already on");
         }
-        String secret = totp.newSecret();
-        user.setTotpSecret(cipher.encrypt(secret));
-        user.setTotpLastStep(null);
+        // BGSI-337: a pending secret (set up but not confirmed yet) is shown again, so the app does not get a new entry.
+        // disable() deletes the secret, so a secret that was active is never used again
+        if (user.getTotpSecret() == null) {
+            user.setTotpSecret(cipher.encrypt(totp.newSecret()));
+            user.setTotpLastStep(null);
+            user.setTotpSecretCreatedAt(LocalDate.now());
+        } else if (user.getTotpSecretCreatedAt() == null) {
+            user.setTotpSecretCreatedAt(LocalDate.now()); // pending secrets saved before BGSI-337
+        }
         userRepository.save(user);
-        return new Setup(secret, totp.otpauthUri(secret, user.getEmail()));
+        String secret = cipher.decrypt(user.getTotpSecret());
+        return new Setup(secret, totp.otpauthUri(secret, user.getEmail(), user.getTotpSecretCreatedAt()));
     }
 
     // Step 2: the first code proves the app works. Returns the 10 recovery codes (shown only this time)
@@ -90,6 +99,7 @@ public class TwoFactorService {
         User user = find(email);
         user.setTotpEnabled(false);
         user.setTotpSecret(null);
+        user.setTotpSecretCreatedAt(null);
         user.setTotpLastStep(null);
         userRepository.save(user);
         recoveryCodeRepository.deleteByUser(user);
