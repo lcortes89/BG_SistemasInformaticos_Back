@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -162,5 +163,40 @@ class TwoFactorIntegrationTest {
 
         String stored = userRepository.findByEmail("encrypted@test.com").orElseThrow().getTotpSecret();
         assertThat(stored).isNotBlank().doesNotContain(secret);
+    }
+
+    private ResultActions setup(SecurityUser admin) throws Exception {
+        return mockMvc.perform(post("/api/admin/account/2fa/setup").with(user(admin))).andExpect(status().isOk());
+    }
+
+    // BGSI-337: going back to the screen before confirming shows the same QR, named with the email and the date
+    @Test
+    void thePendingQrIsTheSameAndHasTheEmailAndTheDate() throws Exception {
+        SecurityUser admin = saveAdmin("pending-qr@test.com");
+
+        String first = json(setup(admin));
+        String second = json(setup(admin));
+
+        assertThat(JsonPath.<String>read(second, "$.secret")).isEqualTo(JsonPath.read(first, "$.secret"));
+        String today = LocalDate.now().format(TotpGenerator.LABEL_DATE).replace("/", "%2F");
+        assertThat(JsonPath.<String>read(second, "$.otpauthUri"))
+                .contains("pending-qr%40test.com%20%C2%B7%20" + today + "?secret=");
+    }
+
+    // BGSI-337: after turning 2FA off, turning it on again gives a new secret (a new entry in the app)
+    @Test
+    void afterTurningItOffTheNewSetupHasANewSecret() throws Exception {
+        SecurityUser admin = saveAdmin("again@test.com");
+        String oldSecret = turnOn(admin).get(0);
+        String confirmToken = JsonPath.read(json(mockMvc.perform(post("/api/admin/account/confirm").with(user(admin))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{ \"password\": \"Correct2026\", \"code\": \"" + code(oldSecret, 1) + "\" }"))
+                .andExpect(status().isOk())), "$.confirmToken");
+        mockMvc.perform(delete("/api/admin/account/2fa").with(user(admin)).header(ConfirmationInterceptor.HEADER, confirmToken))
+                .andExpect(status().isNoContent());
+
+        String newSecret = JsonPath.read(json(setup(admin)), "$.secret");
+
+        assertThat(newSecret).isNotEqualTo(oldSecret);
     }
 }
