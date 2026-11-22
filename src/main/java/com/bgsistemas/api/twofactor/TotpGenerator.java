@@ -10,6 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.OptionalLong;
 
 // BGSI-276: TOTP codes (RFC 6238), the 6 digits that change every 30 seconds in the authenticator app.
@@ -22,6 +24,8 @@ public class TotpGenerator {
     // One step before and after is also accepted: the clocks of the phone and the server are never exact
     static final int ALLOWED_STEPS = 1;
     static final String ISSUER = "BG Sistemas";
+    // BGSI-337: date in the name of the entry, so the app can tell old entries apart
+    static final DateTimeFormatter LABEL_DATE = DateTimeFormatter.ofPattern("dd/MM/yy");
 
     private final SecureRandom random = new SecureRandom();
 
@@ -66,8 +70,8 @@ public class TotpGenerator {
     }
 
     // What the QR code contains: the app reads the issuer, the account and the secret
-    public String otpauthUri(String secret, String email) {
-        String label = encode(ISSUER + ":" + email);
+    public String otpauthUri(String secret, String email, LocalDate date) {
+        String label = encode(ISSUER + ":" + email + " \u00B7 " + date.format(LABEL_DATE));
         return "otpauth://totp/" + label + "?secret=" + secret + "&issuer=" + encode(ISSUER)
                 + "&algorithm=SHA1&digits=" + DIGITS + "&period=" + PERIOD_SECONDS;
     }

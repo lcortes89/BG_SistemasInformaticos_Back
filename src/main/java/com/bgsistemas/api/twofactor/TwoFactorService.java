@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -61,7 +62,7 @@ public class TwoFactorService {
         user.setTotpSecret(cipher.encrypt(secret));
         user.setTotpLastStep(null);
         userRepository.save(user);
-        return new Setup(secret, totp.otpauthUri(secret, user.getEmail()));
+        return new Setup(secret, totp.otpauthUri(secret, user.getEmail(), LocalDate.now()));
     }
 
     // Step 2: the first code proves the app works. Returns the 10 recovery codes (shown only this time)
