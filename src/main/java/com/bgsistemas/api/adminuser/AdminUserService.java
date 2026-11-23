@@ -3,6 +3,7 @@ package com.bgsistemas.api.adminuser;
 import com.bgsistemas.api.adminuser.dtos.AdminUserDTO;
 import com.bgsistemas.api.auth.exceptions.EmailAlreadyExistsException;
 import com.bgsistemas.api.emailchange.EmailChangeTokenRepository;
+import com.bgsistemas.api.globals.BulkResult;
 import com.bgsistemas.api.globals.ResourceConflictException;
 import com.bgsistemas.api.globals.ResourceNotFoundException;
 import com.bgsistemas.api.globals.SearchText;
@@ -23,8 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Predicate;
 
 // BGSI-277: "Administradores". Nobody can act on their own account here (that is "Mi cuenta"),
 // so there is always at least one active admin: the one doing the action.
@@ -131,6 +134,65 @@ public class AdminUserService {
         emailChangeTokenRepository.deleteByUser(user); // BGSI-299
         userRepository.delete(user);
         notifyAdmins(currentEmail + " ha borrado la cuenta de administrador " + user.getEmail() + ".");
+    }
+
+    // BGSI-333: bulk actions. The own account (OWN_ACCOUNT) and a wrong status (WRONG_STATUS) do not stop the others.
+    // One notice for the whole block instead of one email per admin
+    @Transactional
+    public BulkResult blockAll(List<Long> ids, String currentEmail) {
+        return bulk(ids, currentEmail, user -> {
+            if (user.getStatus() != UserStatus.ACTIVE) return false;
+            user.setStatus(UserStatus.BLOCKED);
+            userRepository.save(user);
+            return true;
+        }, " ha bloqueado a: ", ". Ya no pueden entrar al panel.");
+    }
+
+    @Transactional
+    public BulkResult unblockAll(List<Long> ids, String currentEmail) {
+        return bulk(ids, currentEmail, user -> {
+            if (user.getStatus() != UserStatus.BLOCKED) return false;
+            user.setStatus(UserStatus.ACTIVE);
+            userRepository.save(user);
+            return true;
+        }, " ha desbloqueado a: ", ". Pueden volver a entrar al panel.");
+    }
+
+    @Transactional
+    public BulkResult deleteAll(List<Long> ids, String currentEmail) {
+        return bulk(ids, currentEmail, user -> {
+            recoveryCodeRepository.deleteByUser(user);
+            resetTokenRepository.deleteByUser(user);
+            emailChangeTokenRepository.deleteByUser(user);
+            userRepository.delete(user);
+            return true;
+        }, " ha borrado las cuentas de administrador de: ", ".");
+    }
+
+    // "action" returns false when the admin is not in the right status for it
+    private BulkResult bulk(List<Long> ids, String currentEmail, Predicate<User> action, String before, String after) {
+        List<Long> unique = ids.stream().distinct().toList();
+        List<Long> done = new ArrayList<>();
+        List<String> emails = new ArrayList<>();
+        List<BulkResult.Failure> refused = new ArrayList<>();
+        for (Long id : unique) {
+            User user = userRepository.findById(id).orElse(null);
+            if (user == null) {
+                continue; // reported as NOT_FOUND by BulkResult.of
+            }
+            if (user.getEmail().equalsIgnoreCase(currentEmail)) {
+                refused.add(new BulkResult.Failure(id, BulkResult.OWN_ACCOUNT));
+            } else if (action.test(user)) {
+                done.add(id);
+                emails.add(user.getEmail());
+            } else {
+                refused.add(new BulkResult.Failure(id, BulkResult.WRONG_STATUS));
+            }
+        }
+        if (!emails.isEmpty()) {
+            notifyAdmins(currentEmail + before + String.join(", ", emails) + after);
+        }
+        return BulkResult.of(unique, done, refused);
     }
 
     // Any admin except the one logged in

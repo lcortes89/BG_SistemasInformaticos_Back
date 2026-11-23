@@ -3,6 +3,7 @@ package com.bgsistemas.api.adminuser;
 import com.bgsistemas.api.adminuser.dtos.AdminUserDTO;
 import com.bgsistemas.api.auth.exceptions.EmailAlreadyExistsException;
 import com.bgsistemas.api.emailchange.EmailChangeTokenRepository;
+import com.bgsistemas.api.globals.BulkResult;
 import com.bgsistemas.api.globals.ResourceConflictException;
 import com.bgsistemas.api.passwordreset.PasswordResetEmailSender;
 import com.bgsistemas.api.passwordreset.PasswordResetService;
@@ -29,10 +30,13 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -175,5 +179,40 @@ class AdminUserServiceTest {
         verify(emailChangeTokenRepository).deleteByUser(other);
         verify(userRepository).delete(other);
         verify(emailSender).sendAdminNotice(any(), eq("luisa@bg.es ha borrado la cuenta de administrador maria@bg.es."));
+    }
+
+    // ---------- BGSI-333: bulk actions ----------
+
+    @Test
+    void blocksSeveralAdminsButNeverTheOwnAccountAndSendsOneNotice() {
+        BulkResult result = service.blockAll(List.of(2L, 1L, 99L), "luisa@bg.es");
+
+        assertThat(other.getStatus()).isEqualTo(UserStatus.BLOCKED);
+        assertThat(me.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(result.processed()).containsExactly(2L);
+        assertThat(result.failed()).containsExactlyInAnyOrder(
+                new BulkResult.Failure(1L, BulkResult.OWN_ACCOUNT),
+                new BulkResult.Failure(99L, BulkResult.NOT_FOUND));
+        verify(emailSender, times(1)).sendAdminNotice(anyList(), contains("maria@bg.es"));
+    }
+
+    @Test
+    void unblockingAnActiveAdminIsReportedAsWrongStatus() {
+        BulkResult result = service.unblockAll(List.of(2L), "luisa@bg.es");
+
+        assertThat(result.processed()).isEmpty();
+        assertThat(result.failed()).containsExactly(new BulkResult.Failure(2L, BulkResult.WRONG_STATUS));
+        verify(emailSender, never()).sendAdminNotice(anyList(), anyString());
+    }
+
+    @Test
+    void deletesSeveralAdminsButNeverTheOwnAccount() {
+        BulkResult result = service.deleteAll(List.of(1L, 2L), "luisa@bg.es");
+
+        verify(userRepository).delete(other);
+        verify(userRepository, never()).delete(me);
+        verify(recoveryCodeRepository).deleteByUser(other);
+        assertThat(result.processed()).containsExactly(2L);
+        assertThat(result.failed()).containsExactly(new BulkResult.Failure(1L, BulkResult.OWN_ACCOUNT));
     }
 }

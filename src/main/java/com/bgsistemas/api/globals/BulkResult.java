@@ -9,6 +9,7 @@ public record BulkResult(List<Long> processed, List<Failure> failed) {
     public static final String NOT_FOUND = "NOT_FOUND";
     public static final String HAS_PRODUCTS = "HAS_PRODUCTS"; // a brand with products cannot be deleted
     public static final String OWN_ACCOUNT = "OWN_ACCOUNT"; // an admin cannot act on their own account
+    public static final String WRONG_STATUS = "WRONG_STATUS"; // e.g. blocking an admin who is not active
 
     public record Failure(Long id, String reason) {
     }
