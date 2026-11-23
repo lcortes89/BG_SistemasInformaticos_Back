@@ -1,6 +1,9 @@
 package com.bgsistemas.api.service;
 
 import com.bgsistemas.api.globals.ActiveRequestDTO;
+import com.bgsistemas.api.globals.BulkActiveRequestDTO;
+import com.bgsistemas.api.globals.BulkRequestDTO;
+import com.bgsistemas.api.globals.BulkResult;
 import com.bgsistemas.api.globals.PageResponseDTO;
 import com.bgsistemas.api.security.RequiresConfirmation;
 import com.bgsistemas.api.service.dtos.AdminServiceDTO;
@@ -74,5 +77,19 @@ public class AdminServiceController {
     public ResponseEntity<Void> deleteService(@PathVariable Long id) {
         serviceService.deleteService(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // BGSI-333: POST /api/admin/services/bulk-delete { "ids": [...] } -> { processed, failed }.
+    // The password is asked once for the whole block (BGSI-275)
+    @RequiresConfirmation
+    @PostMapping("/bulk-delete")
+    public BulkResult bulkDelete(@Valid @RequestBody BulkRequestDTO request) {
+        return serviceService.deleteServices(request.ids());
+    }
+
+    // BGSI-333: PATCH /api/admin/services/bulk-active { "ids": [...], "active": false } -> { processed, failed }
+    @PatchMapping("/bulk-active")
+    public BulkResult bulkActive(@Valid @RequestBody BulkActiveRequestDTO request) {
+        return serviceService.setServicesActive(request.ids(), request.active());
     }
 }
