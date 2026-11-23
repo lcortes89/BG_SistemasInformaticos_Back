@@ -21,7 +21,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import com.bgsistemas.api.globals.BulkResult;
+
 import java.util.List;
+import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,6 +37,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -210,5 +214,59 @@ class AdminContactControllerTest {
                 .andExpect(status().isUnauthorized());
 
         verify(contactService, never()).deleteContact(any());
+    }
+
+    // ---------- BGSI-333: bulk actions ----------
+
+    @Test
+    void shouldDeleteSeveralContacts() throws Exception {
+        when(contactService.deleteContacts(List.of(1L, 2L, 99L))).thenReturn(
+                new BulkResult(List.of(1L, 2L), List.of(new BulkResult.Failure(99L, BulkResult.NOT_FOUND))));
+
+        mockMvc.perform(post("/api/admin/contacts/bulk-delete").with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [1, 2, 99] }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.processed.length()").value(2))
+                .andExpect(jsonPath("$.failed[0].id").value(99))
+                .andExpect(jsonPath("$.failed[0].reason").value("NOT_FOUND"));
+    }
+
+    @Test
+    void shouldChangeTheStatusOfSeveralContacts() throws Exception {
+        when(contactService.updateContactsStatus(List.of(1L, 2L), ContactStatus.CONTACTED))
+                .thenReturn(new BulkResult(List.of(1L, 2L), List.of()));
+
+        mockMvc.perform(patch("/api/admin/contacts/bulk-status").with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [1, 2], \"status\": \"CONTACTED\" }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.processed.length()").value(2))
+                .andExpect(jsonPath("$.failed.length()").value(0));
+    }
+
+    @Test
+    void shouldRejectAnEmptyListOrMoreThan50Ids() throws Exception {
+        String fiftyOne = LongStream.rangeClosed(1, 51).mapToObj(String::valueOf).reduce((a, b) -> a + "," + b).orElseThrow();
+
+        mockMvc.perform(post("/api/admin/contacts/bulk-delete").with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [] }"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/admin/contacts/bulk-delete").with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [" + fiftyOne + "] }"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(patch("/api/admin/contacts/bulk-status").with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [1] }"))
+                .andExpect(status().isBadRequest());
+
+        verify(contactService, never()).deleteContacts(any());
+        verify(contactService, never()).updateContactsStatus(any(), any());
+    }
+
+    @Test
+    void shouldRejectBulkActionsWithoutLogin() throws Exception {
+        mockMvc.perform(post("/api/admin/contacts/bulk-delete")
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [1] }"))
+                .andExpect(status().isUnauthorized());
+
+        verify(contactService, never()).deleteContacts(any());
     }
 }

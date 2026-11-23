@@ -1,8 +1,11 @@
 package com.bgsistemas.api.contact;
 
+import com.bgsistemas.api.contact.dtos.ContactBulkStatusRequestDTO;
 import com.bgsistemas.api.contact.dtos.ContactResponseDTO;
 import com.bgsistemas.api.contact.dtos.ContactUpdateRequestDTO;
 import com.bgsistemas.api.contact.mappers.ContactMapper;
+import com.bgsistemas.api.globals.BulkRequestDTO;
+import com.bgsistemas.api.globals.BulkResult;
 import com.bgsistemas.api.globals.PageResponseDTO;
 import com.bgsistemas.api.security.RequiresConfirmation;
 import jakarta.validation.Valid;
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -59,5 +63,19 @@ public class AdminContactController {
     public ResponseEntity<Void> deleteContact(@PathVariable Long id) {
         contactService.deleteContact(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // BGSI-333: POST /api/admin/contacts/bulk-delete { "ids": [...] } -> { processed, failed }.
+    // The password is asked once for the whole block (BGSI-275)
+    @RequiresConfirmation
+    @PostMapping("/bulk-delete")
+    public BulkResult deleteContacts(@Valid @RequestBody BulkRequestDTO request) {
+        return contactService.deleteContacts(request.ids());
+    }
+
+    // BGSI-333: PATCH /api/admin/contacts/bulk-status { "ids": [...], "status": "CONTACTED" } -> { processed, failed }
+    @PatchMapping("/bulk-status")
+    public BulkResult updateContactsStatus(@Valid @RequestBody ContactBulkStatusRequestDTO request) {
+        return contactService.updateContactsStatus(request.ids(), request.status());
     }
 }
