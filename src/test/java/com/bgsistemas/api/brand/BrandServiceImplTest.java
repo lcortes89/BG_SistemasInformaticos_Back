@@ -9,6 +9,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.bgsistemas.api.globals.BulkResult;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -141,5 +143,42 @@ class BrandServiceImplTest {
                 .isInstanceOf(BrandNotFoundException.class);
 
         verify(brandRepository, never()).save(any());
+    }
+
+    // ---------- BGSI-333: bulk actions ----------
+
+    private Brand brand(long id, String name) {
+        return new Brand(id, name, "Description", "software", null, true);
+    }
+
+    @Test
+    void shouldDeleteTheBrandsWithoutProductsAndReportTheOthers() {
+        Brand empty = brand(1L, "Empty");
+        Brand withProducts = brand(2L, "BDP");
+        when(brandRepository.findAllById(List.of(1L, 2L, 99L))).thenReturn(List.of(empty, withProducts));
+        when(serviceRepository.countByBrandId(1L)).thenReturn(0L);
+        when(serviceRepository.countByBrandId(2L)).thenReturn(3L);
+
+        BulkResult result = brandService.deleteBrands(List.of(1L, 2L, 99L));
+
+        verify(brandRepository).deleteAll(List.of(empty));
+        assertThat(result.processed()).containsExactly(1L);
+        assertThat(result.failed()).containsExactlyInAnyOrder(
+                new BulkResult.Failure(2L, BulkResult.HAS_PRODUCTS),
+                new BulkResult.Failure(99L, BulkResult.NOT_FOUND));
+    }
+
+    @Test
+    void shouldHideOrShowSeveralBrands() {
+        Brand first = brand(1L, "BDP");
+        Brand second = brand(2L, "PUDU");
+        when(brandRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(first, second));
+
+        BulkResult result = brandService.setBrandsActive(List.of(1L, 2L), false);
+
+        assertThat(first.isActive()).isFalse();
+        assertThat(second.isActive()).isFalse();
+        verify(brandRepository).saveAll(List.of(first, second));
+        assertThat(result.processed()).containsExactly(1L, 2L);
     }
 }
