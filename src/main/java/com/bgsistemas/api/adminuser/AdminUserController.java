@@ -3,6 +3,8 @@ import com.bgsistemas.api.user.User;
 
 import com.bgsistemas.api.adminuser.dtos.AdminEmailRequestDTO;
 import com.bgsistemas.api.adminuser.dtos.AdminUserDTO;
+import com.bgsistemas.api.globals.BulkRequestDTO;
+import com.bgsistemas.api.globals.BulkResult;
 import com.bgsistemas.api.globals.PageResponseDTO;
 import com.bgsistemas.api.security.RequiresConfirmation;
 import com.bgsistemas.api.user.UserStatus;
@@ -84,5 +86,25 @@ public class AdminUserController {
     public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
         adminUserService.delete(id, authentication.getName());
         return ResponseEntity.noContent().build();
+    }
+
+    // BGSI-333: POST /api/admin/users/bulk-{block|unblock|delete} { "ids": [...] } -> { processed, failed }.
+    // The own account is never processed (OWN_ACCOUNT). The password is asked once for the whole block
+    @RequiresConfirmation
+    @PostMapping("/bulk-block")
+    public BulkResult blockAll(@Valid @RequestBody BulkRequestDTO request, Authentication authentication) {
+        return adminUserService.blockAll(request.ids(), authentication.getName());
+    }
+
+    @RequiresConfirmation
+    @PostMapping("/bulk-unblock")
+    public BulkResult unblockAll(@Valid @RequestBody BulkRequestDTO request, Authentication authentication) {
+        return adminUserService.unblockAll(request.ids(), authentication.getName());
+    }
+
+    @RequiresConfirmation
+    @PostMapping("/bulk-delete")
+    public BulkResult deleteAll(@Valid @RequestBody BulkRequestDTO request, Authentication authentication) {
+        return adminUserService.deleteAll(request.ids(), authentication.getName());
     }
 }

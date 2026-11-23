@@ -1,11 +1,14 @@
 package com.bgsistemas.api.client;
 
 import com.bgsistemas.api.client.exceptions.ClientNotFoundException;
+import com.bgsistemas.api.globals.BulkResult;
 import com.bgsistemas.api.globals.SearchText;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Component
 public class ClientServiceImpl implements ClientService {
@@ -63,5 +66,25 @@ public class ClientServiceImpl implements ClientService {
         Client client = getClientById(id);
         client.setPublished(published);
         return clientRepository.save(client);
+    }
+
+    // BGSI-333: one query for all the ids; a repeated id counts once
+    @Override
+    @Transactional
+    public BulkResult deleteClients(List<Long> ids) {
+        List<Long> unique = ids.stream().distinct().toList();
+        List<Client> found = clientRepository.findAllById(unique);
+        clientRepository.deleteAll(found);
+        return BulkResult.of(unique, found.stream().map(Client::getId).toList());
+    }
+
+    @Override
+    @Transactional
+    public BulkResult setClientsPublished(List<Long> ids, boolean published) {
+        List<Long> unique = ids.stream().distinct().toList();
+        List<Client> found = clientRepository.findAllById(unique);
+        found.forEach(client -> client.setPublished(published));
+        clientRepository.saveAll(found);
+        return BulkResult.of(unique, found.stream().map(Client::getId).toList());
     }
 }

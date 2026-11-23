@@ -1,5 +1,6 @@
 package com.bgsistemas.api.service;
 
+import com.bgsistemas.api.globals.BulkResult;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -29,4 +30,9 @@ public interface ServiceService {
 
     // BGSI-309: show or hide the product on the website without deleting it
     Service setServiceActive(Long id, boolean active);
+
+    // BGSI-333: bulk actions (the missing ids are reported, not an error)
+    BulkResult deleteServices(List<Long> ids);
+
+    BulkResult setServicesActive(List<Long> ids, boolean active);
 }

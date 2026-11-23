@@ -3,6 +3,7 @@ package com.bgsistemas.api.adminuser;
 import com.bgsistemas.api.adminuser.dtos.AdminUserDTO;
 import com.bgsistemas.api.auth.exceptions.EmailAlreadyExistsException;
 import com.bgsistemas.api.config.SecurityConfig;
+import com.bgsistemas.api.globals.BulkResult;
 import com.bgsistemas.api.globals.ResourceConflictException;
 import com.bgsistemas.api.security.SecurityUser;
 import com.bgsistemas.api.user.Role;
@@ -27,6 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -154,5 +156,32 @@ class AdminUserControllerTest {
     @Test
     void needsToBeLoggedIn() throws Exception {
         mockMvc.perform(get("/api/admin/users")).andExpect(status().isUnauthorized());
+    }
+
+    // ---------- BGSI-333: bulk actions ----------
+
+    @Test
+    void blocksUnblocksAndDeletesSeveralAdminsWithTheLoggedInEmail() throws Exception {
+        BulkResult result = new BulkResult(List.of(2L), List.of(new BulkResult.Failure(1L, BulkResult.OWN_ACCOUNT)));
+        when(adminUserService.blockAll(List.of(1L, 2L), "luisa@bg.es")).thenReturn(result);
+        when(adminUserService.unblockAll(List.of(1L, 2L), "luisa@bg.es")).thenReturn(result);
+        when(adminUserService.deleteAll(List.of(1L, 2L), "luisa@bg.es")).thenReturn(result);
+
+        for (String action : List.of("bulk-block", "bulk-unblock", "bulk-delete")) {
+            mockMvc.perform(post("/api/admin/users/" + action).with(user(admin))
+                            .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [1, 2] }"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.processed[0]").value(2))
+                    .andExpect(jsonPath("$.failed[0].reason").value("OWN_ACCOUNT"));
+        }
+    }
+
+    @Test
+    void rejectsABulkActionWithoutIds() throws Exception {
+        mockMvc.perform(post("/api/admin/users/bulk-block").with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [] }"))
+                .andExpect(status().isBadRequest());
+
+        verify(adminUserService, never()).blockAll(any(), any());
     }
 }

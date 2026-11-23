@@ -4,6 +4,9 @@ import com.bgsistemas.api.brand.dtos.AdminBrandDTO;
 import com.bgsistemas.api.brand.dtos.BrandRequestDTO;
 import com.bgsistemas.api.brand.mappers.BrandMapper;
 import com.bgsistemas.api.globals.ActiveRequestDTO;
+import com.bgsistemas.api.globals.BulkActiveRequestDTO;
+import com.bgsistemas.api.globals.BulkRequestDTO;
+import com.bgsistemas.api.globals.BulkResult;
 import com.bgsistemas.api.globals.PageResponseDTO;
 import com.bgsistemas.api.security.RequiresConfirmation;
 import jakarta.validation.Valid;
@@ -75,5 +78,19 @@ public class AdminBrandController {
 
     private AdminBrandDTO toAdminDTO(Brand brand) {
         return brandMapper.toAdminDTO(brand, brandService.countServices(brand.getId()));
+    }
+
+    // BGSI-333: POST /api/admin/brands/bulk-delete { "ids": [...] } -> { processed, failed }.
+    // The password is asked once for the whole block (BGSI-275)
+    @RequiresConfirmation
+    @PostMapping("/bulk-delete")
+    public BulkResult bulkDelete(@Valid @RequestBody BulkRequestDTO request) {
+        return brandService.deleteBrands(request.ids());
+    }
+
+    // BGSI-333: PATCH /api/admin/brands/bulk-active { "ids": [...], "active": false } -> { processed, failed }
+    @PatchMapping("/bulk-active")
+    public BulkResult bulkActive(@Valid @RequestBody BulkActiveRequestDTO request) {
+        return brandService.setBrandsActive(request.ids(), request.active());
     }
 }

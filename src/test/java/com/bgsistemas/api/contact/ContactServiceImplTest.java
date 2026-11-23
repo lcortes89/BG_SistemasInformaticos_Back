@@ -11,6 +11,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import com.bgsistemas.api.globals.BulkResult;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -150,5 +153,50 @@ class ContactServiceImplTest {
                 .hasMessageContaining("99");
 
         verify(contactRepository, never()).delete(any());
+    }
+
+    // BGSI-333: bulk actions. The ids that do not exist are reported, the rest is done
+    private Contact contactWithId(long id) {
+        Contact contact = sampleContact();
+        ReflectionTestUtils.setField(contact, "id", id);
+        return contact;
+    }
+
+    @Test
+    void shouldDeleteSeveralContactsAndReportTheMissingOnes() {
+        Contact first = contactWithId(1L);
+        Contact second = contactWithId(2L);
+        when(contactRepository.findAllById(List.of(1L, 2L, 99L))).thenReturn(List.of(first, second));
+
+        BulkResult result = contactService.deleteContacts(List.of(1L, 2L, 99L));
+
+        verify(contactRepository).deleteAll(List.of(first, second));
+        assertThat(result.processed()).containsExactly(1L, 2L);
+        assertThat(result.failed()).containsExactly(new BulkResult.Failure(99L, BulkResult.NOT_FOUND));
+    }
+
+    @Test
+    void shouldChangeTheStatusOfSeveralContacts() {
+        Contact first = contactWithId(1L);
+        Contact second = contactWithId(2L);
+        when(contactRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(first, second));
+
+        BulkResult result = contactService.updateContactsStatus(List.of(1L, 2L), ContactStatus.ARCHIVED);
+
+        assertThat(first.getStatus()).isEqualTo(ContactStatus.ARCHIVED);
+        assertThat(second.getStatus()).isEqualTo(ContactStatus.ARCHIVED);
+        verify(contactRepository).saveAll(List.of(first, second));
+        assertThat(result.processed()).containsExactly(1L, 2L);
+        assertThat(result.failed()).isEmpty();
+    }
+
+    @Test
+    void shouldCountARepeatedIdOnlyOnce() {
+        Contact first = contactWithId(1L);
+        when(contactRepository.findAllById(List.of(1L))).thenReturn(List.of(first));
+
+        BulkResult result = contactService.deleteContacts(List.of(1L, 1L));
+
+        assertThat(result.processed()).containsExactly(1L);
     }
 }

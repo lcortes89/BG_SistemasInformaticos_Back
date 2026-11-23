@@ -1,5 +1,6 @@
 package com.bgsistemas.api.brand;
 
+import com.bgsistemas.api.globals.BulkResult;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -26,4 +27,9 @@ public interface BrandService {
 
     // BGSI-309: show or hide the brand (and its products) on the website without deleting it
     Brand setBrandActive(Long id, boolean active);
+
+    // BGSI-333: bulk actions. A brand with products is not deleted (reason HAS_PRODUCTS)
+    BulkResult deleteBrands(List<Long> ids);
+
+    BulkResult setBrandsActive(List<Long> ids, boolean active);
 }

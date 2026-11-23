@@ -18,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.bgsistemas.api.globals.BulkResult;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -150,5 +152,41 @@ class AdminBrandControllerTest {
     void shouldReturn403WhenUserIsNotAdmin() throws Exception {
         mockMvc.perform(get("/api/admin/brands").with(user("visitor@mail.com").roles("USER")))
                 .andExpect(status().isForbidden());
+    }
+
+    // ---------- BGSI-333: bulk actions ----------
+
+    @Test
+    void shouldDeleteSeveralAtOnce() throws Exception {
+        when(brandService.deleteBrands(List.of(1L, 99L))).thenReturn(
+                new BulkResult(List.of(1L), List.of(new BulkResult.Failure(99L, BulkResult.NOT_FOUND))));
+
+        mockMvc.perform(post("/api/admin/brands/bulk-delete").with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [1, 99] }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.processed[0]").value(1))
+                .andExpect(jsonPath("$.failed[0].reason").value("NOT_FOUND"));
+    }
+
+    @Test
+    void shouldHideSeveralAtOnce() throws Exception {
+        when(brandService.setBrandsActive(List.of(1L, 2L), false)).thenReturn(new BulkResult(List.of(1L, 2L), List.of()));
+
+        mockMvc.perform(patch("/api/admin/brands/bulk-active").with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [1, 2], \"active\": false }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.processed.length()").value(2));
+    }
+
+    @Test
+    void shouldRejectABulkActionWithoutIdsOrWithoutActive() throws Exception {
+        mockMvc.perform(post("/api/admin/brands/bulk-delete").with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [] }"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(patch("/api/admin/brands/bulk-active").with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [1] }"))
+                .andExpect(status().isBadRequest());
+
+        verify(brandService, never()).deleteBrands(any());
     }
 }

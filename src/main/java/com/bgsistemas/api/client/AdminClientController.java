@@ -4,6 +4,9 @@ import com.bgsistemas.api.client.dtos.AdminClientDTO;
 import com.bgsistemas.api.client.dtos.ClientRequestDTO;
 import com.bgsistemas.api.client.mappers.ClientMapper;
 import com.bgsistemas.api.globals.ActiveRequestDTO;
+import com.bgsistemas.api.globals.BulkActiveRequestDTO;
+import com.bgsistemas.api.globals.BulkRequestDTO;
+import com.bgsistemas.api.globals.BulkResult;
 import com.bgsistemas.api.globals.PageResponseDTO;
 import com.bgsistemas.api.security.RequiresConfirmation;
 import jakarta.validation.Valid;
@@ -71,5 +74,19 @@ public class AdminClientController {
     public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
         clientService.deleteClient(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // BGSI-333: POST /api/admin/clients/bulk-delete { "ids": [...] } -> { processed, failed }.
+    // The password is asked once for the whole block (BGSI-275)
+    @RequiresConfirmation
+    @PostMapping("/bulk-delete")
+    public BulkResult bulkDelete(@Valid @RequestBody BulkRequestDTO request) {
+        return clientService.deleteClients(request.ids());
+    }
+
+    // BGSI-333: PATCH /api/admin/clients/bulk-active { "ids": [...], "active": false } -> { processed, failed }
+    @PatchMapping("/bulk-active")
+    public BulkResult bulkActive(@Valid @RequestBody BulkActiveRequestDTO request) {
+        return clientService.setClientsPublished(request.ids(), request.active());
     }
 }

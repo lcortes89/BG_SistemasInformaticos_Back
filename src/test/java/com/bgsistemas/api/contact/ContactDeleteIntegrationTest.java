@@ -88,4 +88,37 @@ class ContactDeleteIntegrationTest {
                         .header(ConfirmationInterceptor.HEADER, confirmToken(admin)))
                 .andExpect(status().isNotFound());
     }
+
+    // BGSI-333: several contacts with the password typed only once
+    @Test
+    void deletesSeveralContactsWithOneConfirmation() throws Exception {
+        SecurityUser admin = saveAdmin("bulk-contacts@test.com");
+        Contact first = saveContact();
+        Contact second = saveContact();
+
+        mockMvc.perform(post("/api/admin/contacts/bulk-delete").with(user(admin))
+                        .header(ConfirmationInterceptor.HEADER, confirmToken(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"ids\": [" + first.getId() + ", " + second.getId() + ", 999999] }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.processed.length()").value(2))
+                .andExpect(jsonPath("$.failed[0].id").value(999999))
+                .andExpect(jsonPath("$.failed[0].reason").value("NOT_FOUND"));
+
+        assertThat(contactRepository.findById(first.getId())).isEmpty();
+        assertThat(contactRepository.findById(second.getId())).isEmpty();
+    }
+
+    @Test
+    void withoutThePasswordNoContactOfTheBlockIsDeleted() throws Exception {
+        SecurityUser admin = saveAdmin("bulk-no-confirm@test.com");
+        Contact contact = saveContact();
+
+        mockMvc.perform(post("/api/admin/contacts/bulk-delete").with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"ids\": [" + contact.getId() + "] }"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.details.reason").value("CONFIRMATION_REQUIRED"));
+
+        assertThat(contactRepository.findById(contact.getId())).isPresent();
+    }
 }

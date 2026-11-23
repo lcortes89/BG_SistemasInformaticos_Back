@@ -3,7 +3,10 @@ package com.bgsistemas.api.contact;
 import com.bgsistemas.api.contact.exceptions.ContactNotFoundException;
 import com.bgsistemas.api.globals.SearchText;
 import com.bgsistemas.api.notification.NotificationService;
+import com.bgsistemas.api.globals.BulkResult;
 import org.springframework.data.domain.Page;
+
+import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,5 +64,25 @@ public class ContactServiceImpl implements ContactService {
         Contact contact = contactRepository.findById(id)
                 .orElseThrow(() -> new ContactNotFoundException(id));
         contactRepository.delete(contact);
+    }
+
+    // BGSI-333: one query for all the ids; a repeated id counts once
+    @Override
+    @Transactional
+    public BulkResult deleteContacts(List<Long> ids) {
+        List<Long> unique = ids.stream().distinct().toList();
+        List<Contact> found = contactRepository.findAllById(unique);
+        contactRepository.deleteAll(found);
+        return BulkResult.of(unique, found.stream().map(Contact::getId).toList());
+    }
+
+    @Override
+    @Transactional
+    public BulkResult updateContactsStatus(List<Long> ids, ContactStatus status) {
+        List<Long> unique = ids.stream().distinct().toList();
+        List<Contact> found = contactRepository.findAllById(unique);
+        found.forEach(contact -> contact.setStatus(status));
+        contactRepository.saveAll(found);
+        return BulkResult.of(unique, found.stream().map(Contact::getId).toList());
     }
 }
