@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import com.bgsistemas.api.globals.BulkResult;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -130,5 +132,31 @@ class ClientServiceImplTest {
 
         assertThatThrownBy(() -> clientService.setClientPublished(99L, false))
                 .isInstanceOf(ClientNotFoundException.class);
+    }
+
+    // ---------- BGSI-333: bulk actions ----------
+
+    @Test
+    void shouldDeleteSeveralClientsAndReportTheMissingOnes() {
+        Client first = laPlaza();
+        when(clientRepository.findAllById(List.of(1L, 99L))).thenReturn(List.of(first));
+
+        BulkResult result = clientService.deleteClients(List.of(1L, 99L));
+
+        verify(clientRepository).deleteAll(List.of(first));
+        assertThat(result.processed()).containsExactly(1L);
+        assertThat(result.failed()).containsExactly(new BulkResult.Failure(99L, BulkResult.NOT_FOUND));
+    }
+
+    @Test
+    void shouldHideOrShowSeveralClients() {
+        Client first = laPlaza();
+        when(clientRepository.findAllById(List.of(1L))).thenReturn(List.of(first));
+
+        BulkResult result = clientService.setClientsPublished(List.of(1L), false);
+
+        assertThat(first.isPublished()).isFalse();
+        verify(clientRepository).saveAll(List.of(first));
+        assertThat(result.processed()).containsExactly(1L);
     }
 }

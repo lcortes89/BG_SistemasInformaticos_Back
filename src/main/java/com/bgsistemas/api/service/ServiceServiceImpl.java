@@ -3,6 +3,7 @@ package com.bgsistemas.api.service;
 import com.bgsistemas.api.brand.Brand;
 import com.bgsistemas.api.brand.BrandRepository;
 import com.bgsistemas.api.brand.exceptions.BrandNotFoundException;
+import com.bgsistemas.api.globals.BulkResult;
 import com.bgsistemas.api.globals.SearchText;
 import com.bgsistemas.api.service.exceptions.ServiceNotFoundException;
 import org.springframework.data.domain.Page;
@@ -99,5 +100,25 @@ public class ServiceServiceImpl implements ServiceService {
     private Brand findBrand(Long brandId) {
         return brandRepository.findById(brandId)
                 .orElseThrow(() -> new BrandNotFoundException(brandId));
+    }
+
+    // BGSI-333: one query for all the ids; a repeated id counts once
+    @Override
+    @Transactional
+    public BulkResult deleteServices(List<Long> ids) {
+        List<Long> unique = ids.stream().distinct().toList();
+        List<Service> found = serviceRepository.findAllById(unique);
+        serviceRepository.deleteAll(found);
+        return BulkResult.of(unique, found.stream().map(Service::getId).toList());
+    }
+
+    @Override
+    @Transactional
+    public BulkResult setServicesActive(List<Long> ids, boolean active) {
+        List<Long> unique = ids.stream().distinct().toList();
+        List<Service> found = serviceRepository.findAllById(unique);
+        found.forEach(service -> service.setActive(active));
+        serviceRepository.saveAll(found);
+        return BulkResult.of(unique, found.stream().map(Service::getId).toList());
     }
 }

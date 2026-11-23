@@ -12,6 +12,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import com.bgsistemas.api.globals.BulkResult;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -200,5 +202,32 @@ class ServiceServiceImplTest {
         when(serviceRepository.save(existing)).thenReturn(existing);
 
         assertThat(serviceService.updateService(1L, changes, 5L).isActive()).isFalse();
+    }
+
+    // ---------- BGSI-333: bulk actions ----------
+
+    @Test
+    void shouldDeleteSeveralServicesAndReportTheMissingOnes() {
+        Service first = new Service(1L, "BDP One", "TPV", null);
+        Service second = new Service(2L, "BDP Cloud", "TPV", null);
+        when(serviceRepository.findAllById(List.of(1L, 2L, 99L))).thenReturn(List.of(first, second));
+
+        BulkResult result = serviceService.deleteServices(List.of(1L, 2L, 99L));
+
+        verify(serviceRepository).deleteAll(List.of(first, second));
+        assertThat(result.processed()).containsExactly(1L, 2L);
+        assertThat(result.failed()).containsExactly(new BulkResult.Failure(99L, BulkResult.NOT_FOUND));
+    }
+
+    @Test
+    void shouldHideOrShowSeveralServices() {
+        Service first = new Service(1L, "BDP One", "TPV", null);
+        when(serviceRepository.findAllById(List.of(1L))).thenReturn(List.of(first));
+
+        BulkResult result = serviceService.setServicesActive(List.of(1L), false);
+
+        assertThat(first.isActive()).isFalse();
+        verify(serviceRepository).saveAll(List.of(first));
+        assertThat(result.processed()).containsExactly(1L);
     }
 }
